@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>隨身記事</title>
+    
+    <!-- iOS 專屬 Meta Tags: 讓它在 iPhone 上看起來像原生 App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="隨身記事">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* 禁止選取文字，讓質感更像 App */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            /* 解決 iOS 底部安全區域問題 */
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* 允許輸入框選取文字 */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* 隱藏捲軸但保留捲動功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 點擊效果 */
+        .active-scale:active {
+            transform: scale(0.95);
+            transition: transform 0.1s;
+        }
+
+        .note-item {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- 頂部標題列 -->
+    <header class="bg-white shadow-sm z-10 pt-safe-top">
+        <div class="px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-gray-900 tracking-wide">隨身記事</h1>
+                <p class="text-xs text-gray-500" id="date-display">載入中...</p>
+            </div>
+            <button onclick="showInfo()" class="p-2 rounded-full hover:bg-gray-100 active-scale text-gray-600">
+                <i data-lucide="info" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主要內容區域 (可捲動) -->
+    <main class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24" id="notes-container">
+        <!-- 筆記將會動態插入這裡 -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center h-full text-gray-400 mt-20">
+            <i data-lucide="notebook-pen" class="w-16 h-16 mb-4 opacity-50"></i>
+            <p>還沒有記事</p>
+            <p class="text-sm">點擊下方按鈕新增</p>
+        </div>
+    </main>
+
+    <!-- 底部輸入區域 -->
+    <div class="bg-white border-t border-gray-200 px-4 py-3 pb-6 fixed bottom-0 w-full z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <form id="add-form" class="flex gap-2 items-center" onsubmit="addNote(event)">
+            <input type="text" id="note-input" 
+                class="flex-1 bg-gray-100 text-gray-900 rounded-full px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
+                placeholder="寫下些什麼..." autocomplete="off">
+            <button type="submit" 
+                class="bg-blue-600 text-white p-3 rounded-full shadow-lg active-scale hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <i data-lucide="plus" class="w-6 h-6"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- 資訊 Modal -->
+    <div id="info-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="info-content">
+            <h3 class="text-lg font-bold mb-2">如何安裝到手機？</h3>
+            <ul class="text-sm text-gray-600 space-y-3 mb-6 list-disc list-inside">
+                <li><strong>iOS (Safari):</strong><br>點擊下方「分享」圖示 <i data-lucide="share" class="inline w-4 h-4"></i> -> 選擇「加入主畫面」。</li>
+                <li><strong>Android (Chrome):</strong><br>點擊右上角選單 -> 選擇「加到主畫面」。</li>
+            </ul>
+            <button onclick="closeInfo()" class="w-full bg-gray-900 text-white py-3 rounded-xl font-medium active-scale">我知道了</button>
+        </div>
+    </div>
+
+    <!-- 刪除確認 Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="text-lg font-bold mb-2 text-red-600">刪除記事？</h3>
+            <p class="text-gray-600 mb-6">這條記事將會被永久刪除。</p>
+            <div class="flex gap-3">
+                <button onclick="cancelDelete()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium active-scale">取消</button>
+                <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium active-scale shadow-md">刪除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化圖示
+        lucide.createIcons();
+
+        // 狀態管理
+        let notes = JSON.parse(localStorage.getItem('myNotes') || '[]');
+        let deleteId = null;
+
+        // DOM 元素
+        const container = document.getElementById('notes-container');
+        const input = document.getElementById('note-input');
+        const emptyState = document.getElementById('empty-state');
+        const dateDisplay = document.getElementById('date-display');
+        const deleteModal = document.getElementById('delete-modal');
+        const infoModal = document.getElementById('info-modal');
+        const infoContent = document.getElementById('info-content');
+
+        // 顯示日期
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateDisplay.textContent = new Date().toLocaleDateString('zh-TW', options);
+
+        // 渲染筆記
+        function renderNotes() {
+            // 清空除了 empty-state 以外的內容
+            const items = container.querySelectorAll('.note-item');
+            items.forEach(el => el.remove());
+
+            if (notes.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                // 倒序顯示，最新的在最上面
+                [...notes].reverse().forEach(note => {
+                    const el = document.createElement('div');
+                    el.className = 'note-item bg-white p-4 rounded-2xl shadow-sm mb-3 border border-gray-100 flex justify-between items-start animate-[fadeIn_0.3s_ease-out]';
+                    el.style.animation = 'fadeIn 0.3s ease-out';
+                    
+                    // 時間格式化
+                    const date = new Date(note.timestamp);
+                    const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+                    el.innerHTML = `
+                        <div class="flex-1 pr-3">
+                            <p class="text-gray-800 text-base leading-relaxed break-all">${escapeHtml(note.text)}</p>
+                            <p class="text-xs text-gray-400 mt-2">${timeStr}</p>
+                        </div>
+                        <button onclick="askDelete(${note.id})" class="text-gray-400 hover:text-red-500 p-2 -mr-2 active-scale transition-colors">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    `;
+                    container.appendChild(el);
+                });
+                lucide.createIcons();
+            }
+        }
+
+        // 新增筆記
+        function addNote(e) {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+
+            const newNote = {
+                id: Date.now(),
+                text: text,
+                timestamp: Date.now()
+            };
+
+            notes.push(newNote);
+            saveNotes();
+            
+            input.value = '';
+            input.blur(); // 收起鍵盤
+            renderNotes();
+            
+            // 滾動到頂部
+            container.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 刪除相關功能
+        function askDelete(id) {
+            deleteId = id;
+            deleteModal.classList.remove('hidden');
+        }
+
+        function cancelDelete() {
+            deleteId = null;
+            deleteModal.classList.add('hidden');
+        }
+
+        function confirmDelete() {
+            if (deleteId) {
+                notes = notes.filter(n => n.id !== deleteId);
+                saveNotes();
+                renderNotes();
+            }
+            cancelDelete();
+        }
+
+        // 資訊 Modal 控制
+        function showInfo() {
+            infoModal.classList.remove('hidden');
+            // 延遲一點點讓 CSS transition 生效
+            setTimeout(() => {
+                infoModal.classList.remove('opacity-0');
+                infoContent.classList.remove('scale-95');
+                infoContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeInfo() {
+            infoModal.classList.add('opacity-0');
+            infoContent.classList.remove('scale-100');
+            infoContent.classList.add('scale-95');
+            setTimeout(() => {
+                infoModal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 儲存到 LocalStorage
+        function saveNotes() {
+            localStorage.setItem('myNotes', JSON.stringify(notes));
+        }
+
+        // 工具：HTML 轉義防止 XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // 點擊 Modal 外部關閉
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) closeInfo();
+        });
+
+        // 初始渲染
+        renderNotes();
+
+        // 添加簡單的動畫 CSS
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>
