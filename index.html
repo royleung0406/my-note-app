@@ -80,19 +80,17 @@
 <body class="h-screen flex flex-col overflow-hidden bg-[#FAFAFA]">
 
     <!-- 頂部資訊 -->
-    <header class="bg-[#FAFAFA]/95 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 border-b border-gray-100">
-        <div class="flex justify-between items-end">
-            <div>
-                <p class="text-xs text-gray-400 tracking-widest mb-1">TAIPEI TRIP</p>
-                <h1 class="text-2xl font-bold tracking-wide text-gray-800">台灣五日遊</h1>
+    <header class="bg-[#FAFAFA]/95 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 border-b border-gray-100 flex justify-between items-end">
+        <div>
+            <p class="text-xs text-gray-400 tracking-widest mb-1">TAIPEI TRIP</p>
+            <h1 class="text-2xl font-bold tracking-wide text-gray-800">台灣五日遊</h1>
+        </div>
+        <div class="text-right flex flex-col items-end gap-1">
+             <div class="flex items-center gap-1 text-gray-700">
+                <i data-lucide="cloud" class="w-4 h-4"></i>
+                <span class="text-sm font-medium">22°C</span>
             </div>
-            <div class="text-right">
-                <p class="text-xs text-gray-400 mb-1">目前天氣</p>
-                <div class="flex items-center gap-1 text-gray-700">
-                    <i data-lucide="cloud" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">22°C</span>
-                </div>
-            </div>
+            <button onclick="resetToDefault()" class="text-[10px] text-gray-300 underline mt-1">恢復預設</button>
         </div>
     </header>
 
@@ -225,9 +223,64 @@
         </div>
     </nav>
 
+    <!-- 編輯 Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl animate-slide-up">
+            <h3 class="text-lg font-bold mb-4 flex justify-between items-center">
+                <span id="modal-title">編輯行程</span>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </h3>
+            <form id="edit-form" class="space-y-4" onsubmit="saveScheduleItem(event)">
+                <input type="hidden" id="edit-day-index">
+                <input type="hidden" id="edit-item-index">
+                
+                <div class="flex gap-3">
+                    <div class="w-1/3 space-y-1">
+                        <label class="text-xs text-gray-500 font-medium ml-1">時間</label>
+                        <input type="time" id="edit-time" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-0 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-800 outline-none">
+                    </div>
+                    <div class="w-2/3 space-y-1">
+                        <label class="text-xs text-gray-500 font-medium ml-1">類型</label>
+                        <select id="edit-type" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-0 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-800 outline-none appearance-none">
+                            <option value="sight">📷 景點</option>
+                            <option value="food">🍜 美食</option>
+                            <option value="shop">🛍️ 購物</option>
+                            <option value="transport">🚌 交通</option>
+                            <option value="stay">🛏️ 住宿</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium ml-1">標題</label>
+                    <input type="text" id="edit-title" required class="w-full bg-gray-50 rounded-xl p-3 text-sm border-0 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-800 outline-none" placeholder="行程名稱">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium ml-1">地點 (Google Maps 導航用)</label>
+                    <input type="text" id="edit-location" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-0 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-800 outline-none" placeholder="輸入地點關鍵字">
+                </div>
+                
+                 <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium ml-1">標籤 (用逗號分隔)</label>
+                    <input type="text" id="edit-tags" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-0 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-800 outline-none" placeholder="例如: 必吃, 推薦">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium ml-1">備註</label>
+                    <textarea id="edit-note" rows="2" class="w-full bg-gray-50 rounded-xl p-3 text-sm border-0 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-800 outline-none" placeholder="備註事項..."></textarea>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-3 rounded-xl bg-gray-800 text-white font-medium shadow-lg shadow-gray-200 active:scale-95 transition-transform">儲存變更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // --- 核心資料: 您的台灣行程 ---
-        const scheduleData = [
+        // --- 核心資料: 預設資料 (若 LocalStorage 為空則使用此資料) ---
+        const defaultScheduleData = [
             {
                 date: "27",
                 month: "11",
@@ -293,14 +346,39 @@
         ];
 
         // --- 初始化 & 邏輯 ---
+        let scheduleData = [];
         let currentDayIndex = 0;
         let expenses = JSON.parse(localStorage.getItem('tw_trip_expenses') || '[]');
 
         function init() {
+            // 載入行程 (LocalStorage 或 預設)
+            const savedSchedule = localStorage.getItem('tw_trip_schedule');
+            if (savedSchedule) {
+                scheduleData = JSON.parse(savedSchedule);
+            } else {
+                scheduleData = JSON.parse(JSON.stringify(defaultScheduleData)); // Deep copy
+                saveSchedule();
+            }
+
             lucide.createIcons();
             renderDaySelector();
             renderTimeline(0);
             renderExpenses();
+        }
+
+        // 儲存行程到 LocalStorage
+        function saveSchedule() {
+            localStorage.setItem('tw_trip_schedule', JSON.stringify(scheduleData));
+        }
+
+        // 恢復預設值
+        function resetToDefault() {
+            if(confirm("確定要恢復成預設行程嗎？您所有的修改將會消失。")) {
+                scheduleData = JSON.parse(JSON.stringify(defaultScheduleData));
+                saveSchedule();
+                renderTimeline(currentDayIndex);
+                alert("已恢復預設行程");
+            }
         }
 
         // 渲染日期選單
@@ -348,7 +426,10 @@
                 </div>
             `;
 
-            html += data.items.map(item => {
+            // 根據時間排序項目
+            data.items.sort((a, b) => a.time.localeCompare(b.time));
+
+            html += data.items.map((item, itemIndex) => {
                 // 根據類型決定圖示
                 let icon = 'map-pin';
                 if(item.type === 'food') icon = 'utensils';
@@ -358,7 +439,7 @@
 
                 // 生成標籤
                 let tagsHtml = '';
-                if(item.tags) {
+                if(item.tags && item.tags.length > 0) {
                     tagsHtml = `<div class="flex flex-wrap gap-2 mt-3">` + 
                     item.tags.map(tag => {
                         let className = 'tag-tips'; // 預設
@@ -368,24 +449,37 @@
                 }
 
                 return `
-                <div class="bg-white rounded-xl p-5 zen-shadow relative overflow-hidden animate-slide-up">
+                <div class="bg-white rounded-xl p-5 zen-shadow relative overflow-hidden animate-slide-up group">
                     <div class="flex gap-4">
-                        <div class="flex flex-col items-center pt-1 w-10">
+                        <div class="flex flex-col items-center pt-1 w-10 flex-shrink-0">
                             <span class="text-xs font-medium text-gray-400 mb-1">${item.time}</span>
                             <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
                                 <i data-lucide="${icon}" class="w-4 h-4"></i>
                             </div>
                             <div class="h-full w-[1px] bg-gray-100 my-2"></div>
                         </div>
-                        <div class="flex-1 pb-2">
+                        <div class="flex-1 pb-2 min-w-0">
                             <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-gray-800 text-lg leading-tight">${item.title}</h3>
+                                <h3 class="font-bold text-gray-800 text-lg leading-tight truncate mr-2">${item.title}</h3>
+                                <div class="flex gap-2 flex-shrink-0">
+                                    <button onclick="openEditModal(${dayIndex}, ${itemIndex})" class="text-gray-300 hover:text-gray-600 p-1">
+                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="deleteScheduleItem(${dayIndex}, ${itemIndex})" class="text-gray-300 hover:text-red-500 p-1">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-1 mb-2">
                                 <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" 
-                                    class="text-xs flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors tap-effect">
-                                    <i data-lucide="navigation" class="w-3 h-3"></i> 導航
+                                    class="text-xs flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors tap-effect max-w-full truncate">
+                                    <i data-lucide="navigation" class="w-3 h-3 flex-shrink-0"></i> 
+                                    <span class="truncate">${item.location || '設定地點'}</span>
                                 </button>
                             </div>
-                            ${item.note ? `<p class="text-xs text-gray-500 mt-1">${item.note}</p>` : ''}
+                            
+                            ${item.note ? `<p class="text-xs text-gray-500 mt-1 line-clamp-2">${item.note}</p>` : ''}
                             ${tagsHtml}
                         </div>
                     </div>
@@ -393,9 +487,107 @@
                 `;
             }).join('');
 
+            // 新增按鈕
+            html += `
+                <button onclick="openAddModal(${dayIndex})" class="w-full py-4 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2 tap-effect mt-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    <span>新增行程</span>
+                </button>
+            `;
+
             container.innerHTML = html;
             lucide.createIcons();
         }
+
+        // --- 編輯/新增功能 ---
+        const editModal = document.getElementById('edit-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const editForm = document.getElementById('edit-form');
+        
+        // 開啟 Modal (新增)
+        function openAddModal(dayIndex) {
+            document.getElementById('edit-day-index').value = dayIndex;
+            document.getElementById('edit-item-index').value = -1; // -1 表示新增
+            
+            modalTitle.innerText = "新增行程";
+            
+            // 清空表單
+            document.getElementById('edit-time').value = "12:00";
+            document.getElementById('edit-type').value = "sight";
+            document.getElementById('edit-title').value = "";
+            document.getElementById('edit-location').value = "";
+            document.getElementById('edit-tags').value = "";
+            document.getElementById('edit-note').value = "";
+            
+            editModal.classList.remove('hidden');
+        }
+
+        // 開啟 Modal (編輯)
+        function openEditModal(dayIndex, itemIndex) {
+            const item = scheduleData[dayIndex].items[itemIndex];
+            
+            document.getElementById('edit-day-index').value = dayIndex;
+            document.getElementById('edit-item-index').value = itemIndex;
+            
+            modalTitle.innerText = "編輯行程";
+            
+            // 填入資料
+            document.getElementById('edit-time').value = item.time;
+            document.getElementById('edit-type').value = item.type;
+            document.getElementById('edit-title').value = item.title;
+            document.getElementById('edit-location').value = item.location;
+            document.getElementById('edit-tags').value = item.tags ? item.tags.join(', ') : '';
+            document.getElementById('edit-note').value = item.note || '';
+            
+            editModal.classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            editModal.classList.add('hidden');
+        }
+
+        // 儲存邏輯
+        function saveScheduleItem(e) {
+            e.preventDefault();
+            
+            const dayIndex = parseInt(document.getElementById('edit-day-index').value);
+            const itemIndex = parseInt(document.getElementById('edit-item-index').value);
+            
+            const newItem = {
+                time: document.getElementById('edit-time').value,
+                type: document.getElementById('edit-type').value,
+                title: document.getElementById('edit-title').value,
+                location: document.getElementById('edit-location').value,
+                tags: document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(t => t),
+                note: document.getElementById('edit-note').value
+            };
+
+            if (itemIndex === -1) {
+                // 新增
+                scheduleData[dayIndex].items.push(newItem);
+            } else {
+                // 修改
+                scheduleData[dayIndex].items[itemIndex] = newItem;
+            }
+
+            saveSchedule();
+            renderTimeline(dayIndex);
+            closeEditModal();
+        }
+
+        function deleteScheduleItem(dayIndex, itemIndex) {
+            if(confirm("確定要刪除這個行程嗎？")) {
+                scheduleData[dayIndex].items.splice(itemIndex, 1);
+                saveSchedule();
+                renderTimeline(dayIndex);
+            }
+        }
+
+        // 點擊 Modal 外部關閉
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) closeEditModal();
+        });
+
 
         // --- 記帳功能 (Local Storage) ---
         function renderExpenses() {
