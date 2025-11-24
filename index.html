@@ -80,6 +80,9 @@
         /* 成員濾鏡按鈕樣式 */
         .filter-btn-active { background-color: rgba(255,255,255,0.2); color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); }
         .filter-btn-inactive { color: rgba(255,255,255,0.6); }
+        
+        /* 天氣橫向捲動區塊 */
+        .weather-scroll-item { min-width: 60px; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-[#FEFDF5]">
@@ -88,7 +91,12 @@
     <header class="bg-[#FEFDF5]/90 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 flex justify-between items-end">
         <div>
             <p class="text-[10px] text-gray-400 tracking-widest mb-1 font-bold">TAIPEI TRIP</p>
-            <h1 class="text-2xl font-bold tracking-wide text-[#433D3C]">台灣五日遊</h1>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold tracking-wide text-[#433D3C]">台灣五日遊</h1>
+                <button onclick="openDateModal()" class="text-stone-400 hover:text-stone-600 tap-effect p-1">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
         <div class="text-right flex flex-col items-end gap-1">
              <div class="flex items-center gap-1 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm border border-stone-100">
@@ -104,7 +112,22 @@
         
         <!-- Tab 1: 行程 -->
         <div id="view-schedule" class="view-section pt-2 space-y-6 animate-fade-in">
+            
+            <!-- 日期選擇 -->
             <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector"></div>
+            
+            <!-- 每小時天氣預測 (新增) -->
+            <div class="bg-white rounded-[24px] p-4 zen-shadow border border-white overflow-hidden">
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <i data-lucide="cloud-sun" class="w-4 h-4 text-blue-400"></i>
+                    <span class="text-xs font-bold text-stone-500">每小時天氣預報</span>
+                </div>
+                <div class="flex overflow-x-auto no-scrollbar gap-2" id="hourly-weather-container">
+                    <!-- JS 生成 -->
+                </div>
+            </div>
+
+            <!-- 行程時間軸 -->
             <div id="timeline-container" class="space-y-4 pb-10"></div>
         </div>
 
@@ -118,7 +141,7 @@
                 <div class="space-y-6">
                     <div class="relative pl-6 border-l-2 border-stone-100">
                         <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-stone-200 border-2 border-white ring-1 ring-stone-100"></div>
-                        <p class="text-xs text-stone-400 mb-1 font-bold">去程 11/27 (Day 1)</p>
+                        <p class="text-xs text-stone-400 mb-1 font-bold">去程 (Day 1)</p>
                         <div class="flex justify-between items-center mb-2 bg-stone-50 p-3 rounded-xl">
                             <span class="text-xl font-bold text-stone-700">HKG</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 text-stone-300"></i>
@@ -128,7 +151,7 @@
                     </div>
                     <div class="relative pl-6 border-l-2 border-stone-100">
                         <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-stone-200 border-2 border-white ring-1 ring-stone-100"></div>
-                        <p class="text-xs text-stone-400 mb-1 font-bold">回程 11/31 (Day 5)</p>
+                        <p class="text-xs text-stone-400 mb-1 font-bold">回程 (Day 5)</p>
                         <div class="flex justify-between items-center mb-2 bg-stone-50 p-3 rounded-xl">
                             <span class="text-xl font-bold text-stone-700">TPE</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 text-stone-300"></i>
@@ -147,7 +170,6 @@
             <div class="bg-[#2D2A26] rounded-[24px] p-6 text-white zen-shadow relative overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
                 
-                <!-- 旅伴按鈕 -->
                 <div class="flex justify-between items-start mb-4">
                     <p class="text-stone-400 text-xs font-medium tracking-wide uppercase" id="budget-title">總消費 (ALL)</p>
                     <button onclick="promptAddCompanion()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-[10px] flex items-center gap-1 backdrop-blur-sm transition-colors">
@@ -155,7 +177,6 @@
                     </button>
                 </div>
 
-                <!-- 總金額顯示 -->
                 <div class="mb-6">
                     <div class="flex items-baseline gap-2">
                         <span class="text-lg text-stone-400 font-bold">NT$</span>
@@ -166,10 +187,7 @@
                     </p>
                 </div>
 
-                <!-- 成員濾鏡 -->
-                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="member-filter-container">
-                    <!-- JS 動態生成 -->
-                </div>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="member-filter-container"></div>
             </div>
             
             <!-- 新增支出表單 -->
@@ -180,7 +198,6 @@
                     記一筆
                 </h3>
 
-                <!-- 金額 -->
                 <div class="bg-stone-50 rounded-2xl px-5 py-4 flex flex-col border border-transparent focus-within:border-[#433D3C] transition-all shadow-inner relative group">
                     <label class="text-[10px] text-stone-400 font-bold mb-1 uppercase">金額 (TWD)</label>
                     <div class="flex items-baseline">
@@ -192,18 +209,14 @@
                     </div>
                 </div>
 
-                <!-- 項目名稱 -->
                 <div class="bg-stone-50 rounded-2xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-stone-200 transition-colors">
                     <input type="text" id="expense-item" placeholder="消費項目 (例如: 晚餐、車費)" class="flex-1 bg-transparent text-base focus:outline-none text-stone-700 placeholder-stone-400 font-medium">
                 </div>
 
-                <!-- 付款與分攤區塊 -->
                 <div class="grid grid-cols-1 gap-3 bg-stone-50 p-4 rounded-2xl">
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="wallet" class="w-3 h-3"></i> 誰先付錢？</span>
-                        <select id="expense-payer" class="bg-white text-stone-700 text-sm font-bold px-3 py-1.5 rounded-lg border-none focus:ring-0 outline-none cursor-pointer shadow-sm">
-                            <!-- JS 生成 -->
-                        </select>
+                        <select id="expense-payer" class="bg-white text-stone-700 text-sm font-bold px-3 py-1.5 rounded-lg border-none focus:ring-0 outline-none cursor-pointer shadow-sm"></select>
                     </div>
                     <div class="h-px bg-stone-200/50 w-full"></div>
                     <div class="space-y-2">
@@ -211,28 +224,21 @@
                             <span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> 誰要分攤？</span>
                             <button type="button" onclick="selectAllShares()" class="text-[10px] bg-blue-50 text-blue-500 font-bold px-2 py-1 rounded hover:bg-blue-100 transition-colors">全選</button>
                         </div>
-                        <div id="share-buttons-container" class="flex flex-wrap gap-2">
-                            <!-- JS 生成 toggle buttons -->
-                        </div>
+                        <div id="share-buttons-container" class="flex flex-wrap gap-2"></div>
                     </div>
                 </div>
 
-                <!-- 送出按鈕 -->
                 <button onclick="addExpense()" class="w-full bg-[#433D3C] text-white py-4 rounded-2xl flex items-center justify-center gap-2 tap-effect shadow-lg shadow-stone-200 font-bold text-lg active:scale-[0.98] transition-transform">
                     <i data-lucide="plus" class="w-5 h-5"></i> 加入記帳
                 </button>
             </div>
 
-            <!-- 記帳列表標題 -->
             <div class="flex justify-between items-end px-2">
                 <h4 class="text-stone-400 text-xs font-bold tracking-widest uppercase">交易紀錄 (HISTORY)</h4>
                 <span class="text-[10px] text-stone-300" id="list-filter-status">顯示全部</span>
             </div>
 
-            <!-- 記帳列表 -->
-            <div id="expense-list" class="space-y-3 pb-10 min-h-[100px]">
-                <!-- JS 生成 -->
-            </div>
+            <div id="expense-list" class="space-y-3 pb-10 min-h-[100px]"></div>
         </div>
     </main>
 
@@ -253,7 +259,7 @@
         </nav>
     </div>
 
-    <!-- Modal (詳細資訊 & 編輯) -->
+    <!-- Modals (詳細, 編輯, 日期) -->
     <div id="detail-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-md rounded-[32px] p-6 shadow-2xl modal-enter relative max-h-[85vh] overflow-y-auto no-scrollbar">
             <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-6"></div>
@@ -270,29 +276,11 @@
             </h3>
             <form id="edit-form" class="space-y-4" onsubmit="saveScheduleItem(event)">
                 <input type="hidden" id="edit-day-index"><input type="hidden" id="edit-item-index">
-                
-                <!-- 改進後的 時間 & 類型 輸入區塊 -->
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label class="text-xs text-stone-500 font-bold ml-1">開始時間</label>
-                        <input type="time" id="edit-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs text-stone-500 font-bold ml-1">結束時間 (選填)</label>
-                        <input type="time" id="edit-end-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center text-stone-500 placeholder-stone-300">
-                    </div>
+                    <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">開始時間</label><input type="time" id="edit-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center"></div>
+                    <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">結束時間 (選填)</label><input type="time" id="edit-end-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center text-stone-500 placeholder-stone-300"></div>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-xs text-stone-500 font-bold ml-1">類型</label>
-                    <select id="edit-type" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm appearance-none">
-                        <option value="sight">📷 景點</option>
-                        <option value="food">🍜 美食</option>
-                        <option value="shop">🛍️ 購物</option>
-                        <option value="transport">🚌 交通</option>
-                        <option value="stay">🛏️ 住宿</option>
-                    </select>
-                </div>
-
+                <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">類型</label><select id="edit-type" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm appearance-none"><option value="sight">📷 景點</option><option value="food">🍜 美食</option><option value="shop">🛍️ 購物</option><option value="transport">🚌 交通</option><option value="stay">🛏️ 住宿</option></select></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">標題</label><input type="text" id="edit-title" required class="w-full bg-white rounded-2xl p-4 text-sm font-bold border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="行程名稱"></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">地點</label><div class="relative"><i data-lucide="map-pin" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400"></i><input type="text" id="edit-location" class="w-full bg-white rounded-2xl p-4 pl-10 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="輸入地點關鍵字"></div></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">標籤 (逗號分隔)</label><input type="text" id="edit-tags" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="例如: 必吃, 推薦"></div>
@@ -303,22 +291,35 @@
         </div>
     </div>
 
+    <!-- 日期編輯 Modal (新增) -->
+    <div id="date-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-[#FEFDF5] w-full max-w-sm rounded-[32px] p-6 shadow-2xl modal-enter relative">
+            <h3 class="text-lg font-bold mb-4 text-[#433D3C] text-center">設定旅程出發日期</h3>
+            <p class="text-xs text-stone-400 text-center mb-6">這將會自動更新所有行程的日期</p>
+            <input type="date" id="start-date-input" class="w-full bg-white rounded-2xl p-4 text-lg font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center mb-6 text-[#433D3C]">
+            <div class="flex gap-3">
+                <button onclick="closeDateModal()" class="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-500 font-bold tap-effect">取消</button>
+                <button onclick="updateTravelDates()" class="flex-1 py-3 rounded-2xl bg-[#433D3C] text-white font-bold tap-effect shadow-lg shadow-stone-300">確認更新</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- 資料與參數 ---
-        const EXCHANGE_RATE = 0.24; // 匯率 1 TWD = 0.24 HKD
+        const EXCHANGE_RATE = 0.24;
         const defaultScheduleData = [
-            { date: "27", month: "11", day: "Day 1", items: [{ time: "07:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "歡迎來到台灣！", description: "記得先去領取事先預訂的 WiFi 機或 SIM 卡。" }, { time: "11:00", title: "民宿放行李", type: "stay", location: "台北", note: "確認 Check-in 時間", description: "如果是使用 Airbnb，記得先與房東聯繫確認大門密碼。" }, { time: "13:00", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃: 滷味"], note: "西門町老字號", description: "滷味非常入味！必點滷蘿蔔、大豆干。" }, { time: "15:00", title: "西門町", type: "sight", location: "西門町", tags: ["逛街"], note: "潮流聖地", description: "推薦小吃：阿宗麵線、幸福堂。" }, { time: "17:00", title: "妳有咖啡 neo café", type: "food", location: "妳有咖啡 neo cafe", tags: ["推薦: 布丁"], note: "復古咖啡廳", description: "大人味焦糖布丁必點。" }, { time: "19:00", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃: 鴨血"], note: "台北最難訂", description: "鴨血像果凍一樣滑嫩！" }, { time: "21:00", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["必吃: 水餃"], note: "在地人最愛", description: "推薦：來來水餃。" }] },
-            { date: "28", month: "11", day: "Day 2", items: [{ time: "09:00", title: "阜杭豆漿", type: "food", location: "阜杭豆漿", note: "必比登推薦", description: "厚燒餅夾蛋非常好吃！" }, { time: "12:00", title: "九份 / 十分", type: "sight", location: "九份老街", tags: ["必吃: 芋圓"], note: "神隱少女場景", description: "先去十分放天燈，再去九份吃芋圓。" }, { time: "16:00", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪"], note: "貓奴天堂", description: "不要開閃光燈拍照喔。" }, { time: "19:00", title: "大股熟成燒肉", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["必點: 牛舌"], note: "清酒販賣機", description: "專人代烤，牛舌超好吃。" }, { time: "21:00", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["必吃: 芋丸"], note: "小而美", description: "劉芋仔蛋黃芋餅必排。" }] },
-            { date: "29", month: "11", day: "Day 3", items: [{ time: "11:00", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["必點: 絲瓜湯包"], note: "平價鼎泰豐", description: "羅勒鮮蚵湯包很有特色。" }, { time: "14:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C"], note: "科技商場", description: "旁邊就是光華商場。" }, { time: "15:00", title: "華山文創園區", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽"], note: "文青必去", description: "舊酒廠改建，很好拍照。" }, { time: "19:00", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單"], note: "高CP值", description: "記得準時到。" }, { time: "21:00", title: "饒河夜市", type: "food", location: "饒河街觀光夜市", tags: ["必吃: 胡椒餅"], note: "藥燉排骨", description: "陳董藥燉排骨冬天必吃。" }] },
-            { date: "30", month: "11", day: "Day 4", items: [{ time: "12:00", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["逛街"], note: "永和百貨", description: "在地百貨公司。" }, { time: "14:00", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["逛街"], note: "路寬好逛", description: "下午也有店家營業。" }, { time: "16:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["推薦: 開心果"], note: "義式冰淇淋", description: "口味非常道地。" }, { time: "19:00", title: "金月日本鍋", type: "food", location: "金月日本鍋料理擔當", tags: ["必點: 清酒湯底"], note: "專人服務", description: "清酒湯底煮海鮮很鮮甜。" }, { time: "21:00", title: "臨江街夜市", type: "food", location: "臨江街觀光夜市", tags: ["必吃: 湯圓"], note: "通化夜市", description: "御品元冰火湯圓必吃。" }] },
-            { date: "31", month: "11", day: "Day 5", items: [{ time: "12:00", title: "Check Out", type: "stay", location: "台北", note: "行李寄放?", description: "檢查隨身物品。" }, { time: "14:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet"], note: "最後衝刺", description: "美式露天 Outlet。" }, { time: "22:00", title: "回香港", type: "transport", location: "台灣桃園國際機場", note: "平安回家", description: "提早2.5小時到機場。" }] }
+            { date: "27", month: "11", day: "Day 1", items: [{ time: "07:00", endTime: "08:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "歡迎來到台灣！", description: "記得先去領取事先預訂的 WiFi 機或 SIM 卡。" }, { time: "11:00", endTime: "11:30", title: "民宿放行李", type: "stay", location: "台北", note: "確認 Check-in 時間", description: "如果是使用 Airbnb，記得先與房東聯繫確認大門密碼。" }, { time: "13:00", endTime: "14:00", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃: 滷味"], note: "西門町老字號", description: "滷味非常入味！必點滷蘿蔔、大豆干。" }, { time: "15:00", endTime: "17:00", title: "西門町", type: "sight", location: "西門町", tags: ["逛街"], note: "潮流聖地", description: "推薦小吃：阿宗麵線、幸福堂。" }, { time: "17:00", endTime: "18:30", title: "妳有咖啡 neo café", type: "food", location: "妳有咖啡 neo cafe", tags: ["推薦: 布丁"], note: "復古咖啡廳", description: "大人味焦糖布丁必點。" }, { time: "19:00", endTime: "20:30", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃: 鴨血"], note: "台北最難訂", description: "鴨血像果凍一樣滑嫩！" }, { time: "21:00", endTime: "22:30", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["必吃: 水餃"], note: "在地人最愛", description: "推薦：來來水餃。" }] },
+            { date: "28", month: "11", day: "Day 2", items: [{ time: "09:00", endTime: "10:00", title: "阜杭豆漿", type: "food", location: "阜杭豆漿", note: "必比登推薦", description: "厚燒餅夾蛋非常好吃！" }, { time: "12:00", endTime: "14:00", title: "九份 / 十分", type: "sight", location: "九份老街", tags: ["必吃: 芋圓"], note: "神隱少女場景", description: "先去十分放天燈，再去九份吃芋圓。" }, { time: "16:00", endTime: "17:30", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪"], note: "貓奴天堂", description: "不要開閃光燈拍照喔。" }, { time: "19:00", endTime: "20:30", title: "大股熟成燒肉", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["必點: 牛舌"], note: "清酒販賣機", description: "專人代烤，牛舌超好吃。" }, { time: "21:00", endTime: "22:00", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["必吃: 芋丸"], note: "小而美", description: "劉芋仔蛋黃芋餅必排。" }] },
+            { date: "29", month: "11", day: "Day 3", items: [{ time: "11:00", endTime: "12:30", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["必點: 絲瓜湯包"], note: "平價鼎泰豐", description: "羅勒鮮蚵湯包很有特色。" }, { time: "14:00", endTime: "15:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C"], note: "科技商場", description: "旁邊就是光華商場。" }, { time: "15:00", endTime: "17:00", title: "華山文創園區", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽"], note: "文青必去", description: "舊酒廠改建，很好拍照。" }, { time: "19:00", endTime: "20:30", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單"], note: "高CP值", description: "記得準時到。" }, { time: "21:00", endTime: "22:30", title: "饒河夜市", type: "food", location: "饒河街觀光夜市", tags: ["必吃: 胡椒餅"], note: "藥燉排骨", description: "陳董藥燉排骨冬天必吃。" }] },
+            { date: "30", month: "11", day: "Day 4", items: [{ time: "12:00", endTime: "13:30", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["逛街"], note: "永和百貨", description: "在地百貨公司。" }, { time: "14:00", endTime: "15:30", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["逛街"], note: "路寬好逛", description: "下午也有店家營業。" }, { time: "16:00", endTime: "17:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["推薦: 開心果"], note: "義式冰淇淋", description: "口味非常道地。" }, { time: "19:00", endTime: "20:30", title: "金月日本鍋", type: "food", location: "金月日本鍋料理擔當", tags: ["必點: 清酒湯底"], note: "專人服務", description: "清酒湯底煮海鮮很鮮甜。" }, { time: "21:00", endTime: "22:00", title: "臨江街夜市", type: "food", location: "臨江街觀光夜市", tags: ["必吃: 湯圓"], note: "通化夜市", description: "御品元冰火湯圓必吃。" }] },
+            { date: "31", month: "11", day: "Day 5", items: [{ time: "12:00", endTime: "12:30", title: "Check Out", type: "stay", location: "台北", note: "行李寄放?", description: "檢查隨身物品。" }, { time: "14:00", endTime: "17:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet"], note: "最後衝刺", description: "美式露天 Outlet。" }, { time: "22:00", endTime: "23:00", title: "回香港", type: "transport", location: "台灣桃園國際機場", note: "平安回家", description: "提早2.5小時到機場。" }] }
         ];
 
         let scheduleData = [];
         let currentDayIndex = 0;
         let expenses = JSON.parse(localStorage.getItem('tw_trip_expenses') || '[]');
         let companions = JSON.parse(localStorage.getItem('tw_trip_companions') || '["我"]');
-        let currentFilter = 'ALL'; // 'ALL' 或 旅伴名稱
+        let currentFilter = 'ALL'; 
 
         function init() {
             const savedSchedule = localStorage.getItem('tw_trip_schedule');
@@ -329,214 +330,149 @@
             renderDaySelector();
             renderTimeline(0);
             
-            // 記帳初始化
-            renderExpenses(); // 已經包含 renderStats 和 renderFilter
+            renderExpenses(); 
             updatePayerSelect();
             renderShareButtons();
             
-            // 監聽金額輸入，即時換算 HKD
             document.getElementById('expense-amount').addEventListener('input', function(e) {
                 const val = parseInt(e.target.value) || 0;
                 document.getElementById('input-hkd-preview').innerText = Math.round(val * EXCHANGE_RATE);
             });
         }
 
-        // ... (Schedule & Modal 相關函數) ...
+        // --- 天氣功能 (模擬) ---
+        function generateHourlyWeather() {
+            const weathers = [
+                { icon: 'sun', temp: 22 }, { icon: 'cloud-sun', temp: 24 }, { icon: 'cloud', temp: 23 },
+                { icon: 'cloud-rain', temp: 20 }, { icon: 'cloud-lightning', temp: 19 }
+            ];
+            let html = '';
+            // 模擬 06:00 - 23:00
+            for (let i = 6; i <= 23; i++) {
+                const mock = weathers[Math.floor(Math.random() * weathers.length)];
+                const temp = mock.temp + Math.floor(Math.random() * 3); // 隨機微調
+                const timeStr = i.toString().padStart(2, '0') + ":00";
+                
+                html += `
+                    <div class="weather-scroll-item flex flex-col items-center justify-center bg-stone-50 rounded-xl py-2 px-1 snap-start">
+                        <span class="text-[10px] text-stone-400 font-mono mb-1">${timeStr}</span>
+                        <i data-lucide="${mock.icon}" class="w-5 h-5 text-stone-600 mb-1"></i>
+                        <span class="text-xs font-bold text-stone-800">${temp}°</span>
+                    </div>
+                `;
+            }
+            document.getElementById('hourly-weather-container').innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // --- 日期編輯功能 ---
+        const dateModal = document.getElementById('date-modal');
+        function openDateModal() {
+            // 預設顯示當前第一天的日期
+            const currentFirstDay = scheduleData[0];
+            const currentYear = new Date().getFullYear(); // 假設當年，實際應用可存年份
+            // 這裡簡化處理，假設格式為 "27" (日) "11" (月)
+            // 為了 input type="date" 正確顯示，我們需要 YYYY-MM-DD
+            // 這裡簡單讓使用者重選，不預填複雜邏輯
+            dateModal.classList.remove('hidden');
+        }
+        function closeDateModal() { dateModal.classList.add('hidden'); }
+        
+        function updateTravelDates() {
+            const input = document.getElementById('start-date-input').value;
+            if (!input) return alert("請選擇日期");
+            
+            const startDate = new Date(input);
+            
+            // 更新每一天的日期
+            scheduleData.forEach((dayItem, index) => {
+                const d = new Date(startDate);
+                d.setDate(startDate.getDate() + index);
+                
+                dayItem.date = d.getDate().toString();
+                dayItem.month = (d.getMonth() + 1).toString();
+                // Day X 保持不變，或者也可以重置
+            });
+            
+            saveSchedule();
+            renderDaySelector();
+            renderTimeline(currentDayIndex); // 重新渲染當前頁面
+            closeDateModal();
+        }
+
+        // ... (其他核心邏輯: Schedule, Modal, Expense 保持不變) ...
         function saveSchedule() { localStorage.setItem('tw_trip_schedule', JSON.stringify(scheduleData)); }
         function resetToDefault() { if(confirm("恢復預設行程？")) { scheduleData = JSON.parse(JSON.stringify(defaultScheduleData)); saveSchedule(); renderTimeline(currentDayIndex); } }
-        function renderDaySelector() { const c = document.getElementById('day-selector'); c.innerHTML = scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===0?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.date}</span></button>`).join(''); }
-        function selectDay(i) { currentDayIndex = i; document.querySelectorAll('.day-btn').forEach((b, idx) => { b.className = `day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${idx===i?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200 transform scale-105':'bg-white text-stone-300'}`; }); renderTimeline(i); }
+        function renderDaySelector() { const c = document.getElementById('day-selector'); c.innerHTML = scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===0?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month}/${d.date}</span></button>`).join(''); }
+        function selectDay(i) { 
+            currentDayIndex = i; 
+            document.querySelectorAll('.day-btn').forEach((b, idx) => { b.className = `day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${idx===i?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200 transform scale-105':'bg-white text-stone-300'}`; }); 
+            renderTimeline(i);
+            // 切換日期時重新生成天氣 (模擬不同天的天氣)
+            generateHourlyWeather(); 
+        }
+        
         function renderTimeline(i) { 
             const c = document.getElementById('timeline-container'); 
             const d = scheduleData[i];
             d.items.sort((a,b)=>a.time.localeCompare(b.time));
-            c.innerHTML = `<div class="flex items-center justify-between px-2 mb-4 mt-2 animate-fade-in"><p class="text-sm text-stone-400 font-bold">11月${d.date}日 / ${d.day}</p><i data-lucide="cloud-sun" class="w-4 h-4 text-stone-400"></i></div>` + 
-            d.items.map((item, idx) => {
+            // 移除了舊的天氣標題，因為已經有獨立區塊
+            
+            let html = d.items.map((item, idx) => {
                 let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin';
                 let color = item.type==='food'?'text-orange-500 bg-orange-50':item.type==='transport'?'text-blue-500 bg-blue-50':item.type==='shop'?'text-pink-500 bg-pink-50':item.type==='stay'?'text-purple-500 bg-purple-50':'text-stone-500 bg-stone-100';
                 let tags = item.tags ? item.tags.map(t => `<span class="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-stone-50 text-stone-500 ${t.includes('必')?'tag-must-eat':''}">${t}</span>`).join('') : '';
                 
-                // 時間顯示邏輯 (含結束時間)
                 let timeDisplay = `<div class="text-center"><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.time}</span>`;
-                if(item.endTime) {
-                    timeDisplay += `<span class="text-[10px] text-stone-300 font-mono block leading-tight my-0.5">↓</span><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.endTime}</span>`;
-                }
+                if(item.endTime) { timeDisplay += `<span class="text-[10px] text-stone-300 font-mono block leading-tight my-0.5">↓</span><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.endTime}</span>`; }
                 timeDisplay += `</div>`;
 
                 return `<div onclick="openDetailModal(${i}, ${idx})" class="card-clickable bg-white rounded-[24px] p-5 zen-shadow relative overflow-hidden animate-slide-up mb-4 border border-white active:bg-stone-50 transition-colors"><div class="flex gap-4"><div class="flex flex-col items-center pt-1 w-12 flex-shrink-0">${timeDisplay}<div class="w-10 h-10 rounded-full flex items-center justify-center ${color} mt-2"><i data-lucide="${icon}" class="w-5 h-5"></i></div><div class="h-full w-0.5 bg-stone-100 my-2 rounded-full"></div></div><div class="flex-1 pb-2 min-w-0"><div class="flex justify-between items-start"><h3 class="font-bold text-[#433D3C] text-lg leading-tight truncate mr-2">${item.title}</h3></div><div class="flex items-center gap-2 mt-2 mb-3"><div class="text-xs flex items-center gap-1.5 bg-stone-50 text-stone-500 px-3 py-1.5 rounded-xl max-w-full truncate font-medium"><i data-lucide="map-pin" class="w-3 h-3 flex-shrink-0"></i><span class="truncate">${item.location||'設定地點'}</span></div></div>${item.note?`<p class="text-xs text-stone-400 mt-1 line-clamp-2 leading-relaxed bg-[#FEFDF5] p-2 rounded-lg">${item.note}</p>`:''}<div class="flex flex-wrap gap-2 mt-3">${tags}</div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-stone-50"><button onclick="event.stopPropagation(); openEditModal(${i}, ${idx})" class="px-3 py-1.5 bg-stone-100 rounded-lg text-xs font-bold text-stone-500 tap-effect flex items-center gap-1"><i data-lucide="pencil" class="w-3 h-3"></i> 編輯</button><button onclick="event.stopPropagation(); deleteScheduleItem(${i}, ${idx})" class="px-3 py-1.5 bg-red-50 rounded-lg text-xs font-bold text-red-400 tap-effect flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> 刪除</button></div></div></div></div>`
             }).join('') + `<button onclick="openAddModal(${i})" class="w-full py-4 rounded-[24px] border-2 border-dashed border-stone-200 text-stone-300 hover:border-stone-300 hover:text-stone-500 transition-all flex items-center justify-center gap-2 tap-effect mt-2 bg-white/50"><i data-lucide="plus" class="w-5 h-5"></i><span class="font-bold">新增行程</span></button>`;
+            
+            c.innerHTML = html;
             lucide.createIcons();
         }
 
-        // --- 記帳濾鏡功能 ---
-        function setFilter(name) {
-            currentFilter = name;
-            renderExpenses(); // 重新渲染列表與總金額
-        }
-
-        function renderFilter() {
-            const container = document.getElementById('member-filter-container');
-            let html = `<button onclick="setFilter('ALL')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${currentFilter === 'ALL' ? 'filter-btn-active' : 'filter-btn-inactive'}">全體</button>`;
-            companions.forEach(c => {
-                html += `<button onclick="setFilter('${c}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${currentFilter === c ? 'filter-btn-active' : 'filter-btn-inactive'}">${c}</button>`;
-            });
-            container.innerHTML = html;
-        }
-
-        // --- 記帳核心 (雙幣 + 濾鏡 + 個人分攤) ---
+        // ... (Expense Logic, Filters, Add Expense, Delete Expense etc. - same as before) ...
+        function setFilter(name) { currentFilter = name; renderExpenses(); }
+        function renderFilter() { const c = document.getElementById('member-filter-container'); let h = `<button onclick="setFilter('ALL')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${currentFilter === 'ALL' ? 'filter-btn-active' : 'filter-btn-inactive'}">全體</button>`; companions.forEach(n => { h += `<button onclick="setFilter('${n}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${currentFilter === n ? 'filter-btn-active' : 'filter-btn-inactive'}">${n}</button>`; }); c.innerHTML = h; }
         function renderExpenses() {
             const list = document.getElementById('expense-list');
             const totalTwdEl = document.getElementById('total-expense-twd');
             const totalHkdEl = document.getElementById('total-expense-hkd');
             const titleEl = document.getElementById('budget-title');
             const listStatusEl = document.getElementById('list-filter-status');
-            
-            let displayExpenses = [];
-            let totalTWD = 0;
-
-            // 1. 根據濾鏡篩選
-            if (currentFilter === 'ALL') {
-                displayExpenses = expenses;
-                titleEl.innerText = "總消費 (ALL)";
-                listStatusEl.innerText = "顯示全部";
-            } else {
-                titleEl.innerText = `個人消費 (${currentFilter})`;
-                listStatusEl.innerText = `只顯示 ${currentFilter} 的分攤項目`;
-                // 篩選邏輯：只抓該成員有參與分攤的項目
-                displayExpenses = expenses.filter(ex => {
-                    const sharers = ex.sharedBy && ex.sharedBy.length > 0 ? ex.sharedBy : ["我"];
-                    return sharers.includes(currentFilter);
-                });
-            }
-
-            // 2. 計算金額 (總額計算)
-            if (currentFilter === 'ALL') {
-                totalTWD = expenses.reduce((sum, ex) => sum + parseInt(ex.amount), 0);
-            } else {
-                totalTWD = displayExpenses.reduce((sum, ex) => {
-                    const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1;
-                    return sum + (parseInt(ex.amount) / sharersCount);
-                }, 0);
-            }
-
-            // 3. 渲染列表
+            let displayExpenses = []; let totalTWD = 0;
+            if (currentFilter === 'ALL') { displayExpenses = expenses; titleEl.innerText = "總消費 (ALL)"; listStatusEl.innerText = "顯示全部"; } else { titleEl.innerText = `個人消費 (${currentFilter})`; listStatusEl.innerText = `只顯示 ${currentFilter} 的分攤項目`; displayExpenses = expenses.filter(ex => { const sharers = ex.sharedBy && ex.sharedBy.length > 0 ? ex.sharedBy : ["我"]; return sharers.includes(currentFilter); }); }
+            if (currentFilter === 'ALL') { totalTWD = expenses.reduce((sum, ex) => sum + parseInt(ex.amount), 0); } else { totalTWD = displayExpenses.reduce((sum, ex) => { const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1; return sum + (parseInt(ex.amount) / sharersCount); }, 0); }
             list.innerHTML = displayExpenses.map((ex, i) => {
                 const originalIndex = expenses.indexOf(ex);
                 const fullAmount = parseInt(ex.amount);
-                let displayAmount = fullAmount;
-                let displayLabel = "總額"; 
-                let detailText = "";
-                let amountClass = "text-stone-800"; // 預設黑色
-
-                // **重要修改：如果是個人模式，顯示分攤後的金額**
-                if (currentFilter !== 'ALL') {
-                    const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1;
-                    displayAmount = fullAmount / sharersCount;
-                    displayLabel = "應付";
-                    detailText = `(總額 $${fullAmount} ÷ ${sharersCount}人)`; // 顯示計算細節
-                    amountClass = "text-blue-600"; // 個人應付變藍色
-                }
-
-                const amountHKD = Math.round(displayAmount * EXCHANGE_RATE);
-                const amountTWD = Math.round(displayAmount);
-                const payer = ex.payer || "我";
-                const sharedBy = ex.sharedBy || ["我"];
-                const shareText = sharedBy.length === companions.length ? "全員" : sharedBy.join(",");
-                
-                return `
-                    <div class="flex flex-col bg-white p-4 rounded-[20px] shadow-sm border border-stone-100">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <span class="text-base font-bold text-stone-700 block">${ex.item}</span>
-                                <span class="text-[10px] text-stone-400">由 ${payer} 先付 • 分攤: ${shareText}</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-[10px] text-stone-300 font-bold mb-0.5 text-right">${displayLabel}</div>
-                                <div class="font-mono font-bold ${amountClass} text-lg">NT$ ${amountTWD}</div>
-                                <div class="font-mono text-xs text-stone-400">≈ HK$ ${amountHKD}</div>
-                                ${detailText ? `<div class="text-[10px] text-stone-400 mt-0.5">${detailText}</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="flex justify-end border-t border-stone-50 pt-2 mt-1">
-                            <button onclick="deleteExpense(${originalIndex})" class="text-xs text-stone-300 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded tap-effect">
-                                <i data-lucide="trash-2" class="w-3 h-3"></i> 刪除
-                            </button>
-                        </div>
-                    </div>`;
+                let displayAmount = fullAmount; let displayLabel = "總額"; let detailText = ""; let amountClass = "text-stone-800";
+                if (currentFilter !== 'ALL') { const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1; displayAmount = fullAmount / sharersCount; displayLabel = "應付"; detailText = `(總額 $${fullAmount} ÷ ${sharersCount}人)`; amountClass = "text-blue-600"; }
+                const amountHKD = Math.round(displayAmount * EXCHANGE_RATE); const amountTWD = Math.round(displayAmount);
+                const payer = ex.payer || "我"; const sharedBy = ex.sharedBy || ["我"]; const shareText = sharedBy.length === companions.length ? "全員" : sharedBy.join(",");
+                return `<div class="flex flex-col bg-white p-4 rounded-[20px] shadow-sm border border-stone-100"><div class="flex justify-between items-start mb-2"><div><span class="text-base font-bold text-stone-700 block">${ex.item}</span><span class="text-[10px] text-stone-400">由 ${payer} 先付 • 分攤: ${shareText}</span></div><div class="text-right"><div class="text-[10px] text-stone-300 font-bold mb-0.5 text-right">${displayLabel}</div><div class="font-mono font-bold ${amountClass} text-lg">NT$ ${amountTWD}</div><div class="font-mono text-xs text-stone-400">≈ HK$ ${amountHKD}</div>${detailText ? `<div class="text-[10px] text-stone-400 mt-0.5">${detailText}</div>` : ''}</div></div><div class="flex justify-end border-t border-stone-50 pt-2 mt-1"><button onclick="deleteExpense(${originalIndex})" class="text-xs text-stone-300 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded tap-effect"><i data-lucide="trash-2" class="w-3 h-3"></i> 刪除</button></div></div>`;
             }).reverse().join('') || `<div class="text-center text-stone-300 text-sm py-8">沒有相關紀錄</div>`;
-            
-            // 4. 更新總數顯示
-            totalTwdEl.innerText = Math.round(totalTWD).toLocaleString();
-            totalHkdEl.innerText = Math.round(totalTWD * EXCHANGE_RATE).toLocaleString();
-            
-            renderFilter(); // 更新濾鏡按鈕狀態
-            localStorage.setItem('tw_trip_expenses', JSON.stringify(expenses));
-            lucide.createIcons();
+            totalTwdEl.innerText = Math.round(totalTWD).toLocaleString(); totalHkdEl.innerText = Math.round(totalTWD * EXCHANGE_RATE).toLocaleString();
+            renderFilter(); localStorage.setItem('tw_trip_expenses', JSON.stringify(expenses)); lucide.createIcons();
         }
-
-        function addExpense() {
-            const item = document.getElementById('expense-item').value;
-            const amount = document.getElementById('expense-amount').value;
-            const payer = document.getElementById('expense-payer').value;
-            const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected');
-            const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name'));
-
-            if(!item || !amount) { alert("請輸入項目和金額"); return; }
-            if(sharedBy.length === 0) { alert("請至少選擇一位分攤對象"); return; }
-
-            expenses.push({ item, amount, payer, sharedBy });
-            
-            document.getElementById('expense-item').value = '';
-            document.getElementById('expense-amount').value = '';
-            document.getElementById('input-hkd-preview').innerText = '0';
-            
-            renderExpenses();
-        }
-
-        function deleteExpense(index) {
-            if(confirm('確定刪除這筆紀錄？')) {
-                expenses.splice(index, 1);
-                renderExpenses();
-            }
-        }
-
-        function promptAddCompanion() {
-            const name = prompt("請輸入旅伴名字：");
-            if (name && name.trim() !== "") {
-                if (!companions.includes(name.trim())) {
-                    companions.push(name.trim());
-                    localStorage.setItem('tw_trip_companions', JSON.stringify(companions));
-                    updatePayerSelect();
-                    renderShareButtons();
-                    renderFilter();
-                } else { alert("已經在名單內囉！"); }
-            }
-        }
-
+        function addExpense() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount) { alert("請輸入項目和金額"); return; } if(sharedBy.length === 0) { alert("請至少選擇一位分攤對象"); return; } expenses.push({ item, amount, payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; renderExpenses(); }
+        function deleteExpense(index) { if(confirm('確定刪除這筆紀錄？')) { expenses.splice(index, 1); renderExpenses(); } }
+        function promptAddCompanion() { const name = prompt("請輸入旅伴名字："); if (name && name.trim() !== "") { if (!companions.includes(name.trim())) { companions.push(name.trim()); localStorage.setItem('tw_trip_companions', JSON.stringify(companions)); updatePayerSelect(); renderShareButtons(); renderFilter(); } else { alert("已經在名單內囉！"); } } }
         function updatePayerSelect() { document.getElementById('expense-payer').innerHTML = companions.map(c => `<option value="${c}">${c}</option>`).join(''); }
         function renderShareButtons() { document.getElementById('share-buttons-container').innerHTML = companions.map(c => `<button type="button" class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors" data-name="${c}" onclick="toggleShare(this)">${c}</button>`).join(''); }
         function toggleShare(btn) { if (btn.classList.contains('share-btn-selected')) { btn.classList.remove('share-btn-selected'); btn.classList.add('share-btn-unselected'); } else { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); } }
         function selectAllShares() { document.querySelectorAll('.share-toggle-btn').forEach(btn => { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); }); }
 
-        // ... (Modal Logic 保持不變) ...
-        const detailModal = document.getElementById('detail-modal');
-        const detailContent = document.getElementById('detail-content');
-        function openDetailModal(dayIndex, itemIndex) {
-            const item = scheduleData[dayIndex].items[itemIndex];
-            let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin';
-            
-            // 詳細頁面也顯示結束時間
-            let timeStr = item.time;
-            if (item.endTime) timeStr += ` - ${item.endTime}`;
-
-            detailContent.innerHTML = `<div class="flex items-start justify-between mb-2"><div class="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div class="text-right"><p class="text-2xl font-mono font-bold text-stone-800">${timeStr}</p><p class="text-xs text-stone-400 font-bold">11月${scheduleData[dayIndex].date}日</p></div></div><h2 class="text-2xl font-bold text-[#433D3C] mb-1 leading-tight">${item.title}</h2><button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" class="inline-flex items-center gap-1.5 text-blue-500 text-sm font-bold mb-4 tap-effect"><i data-lucide="map-pin" class="w-4 h-4"></i> ${item.location || '設定地點'} <i data-lucide="external-link" class="w-3 h-3"></i></button><div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><h4 class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-wider">ABOUT</h4><div class="text-stone-600 text-sm leading-relaxed space-y-2">${item.description ? item.description.split('\n').map(l=>`<p class="mb-2">${l}</p>`).join('') : '<p class="text-stone-400 italic">暫無詳細介紹...</p>'}</div></div>`;
-            detailModal.classList.remove('hidden'); lucide.createIcons();
-        }
+        // ... (Modals: Detail & Edit) ...
+        const detailModal = document.getElementById('detail-modal'); const detailContent = document.getElementById('detail-content');
+        function openDetailModal(dayIndex, itemIndex) { const item = scheduleData[dayIndex].items[itemIndex]; let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin'; let timeStr = item.time; if (item.endTime) timeStr += ` - ${item.endTime}`; detailContent.innerHTML = `<div class="flex items-start justify-between mb-2"><div class="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div class="text-right"><p class="text-2xl font-mono font-bold text-stone-800">${timeStr}</p><p class="text-xs text-stone-400 font-bold">11月${scheduleData[dayIndex].date}日</p></div></div><h2 class="text-2xl font-bold text-[#433D3C] mb-1 leading-tight">${item.title}</h2><button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" class="inline-flex items-center gap-1.5 text-blue-500 text-sm font-bold mb-4 tap-effect"><i data-lucide="map-pin" class="w-4 h-4"></i> ${item.location || '設定地點'} <i data-lucide="external-link" class="w-3 h-3"></i></button><div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><h4 class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-wider">ABOUT</h4><div class="text-stone-600 text-sm leading-relaxed space-y-2">${item.description ? item.description.split('\n').map(l=>`<p class="mb-2">${l}</p>`).join('') : '<p class="text-stone-400 italic">暫無詳細介紹...</p>'}</div></div>`; detailModal.classList.remove('hidden'); lucide.createIcons(); }
         function closeDetailModal() { detailModal.classList.add('hidden'); }
         detailModal.addEventListener('click', (e) => { if (e.target === detailModal) closeDetailModal(); });
 
-        const editModal = document.getElementById('edit-modal');
-        const modalTitle = document.getElementById('modal-title');
+        const editModal = document.getElementById('edit-modal'); const modalTitle = document.getElementById('modal-title');
         function openAddModal(dayIndex) { document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = -1; modalTitle.innerText = "新增行程"; document.getElementById('edit-time').value = "12:00"; document.getElementById('edit-end-time').value = ""; document.getElementById('edit-type').value = "sight"; document.getElementById('edit-title').value = ""; document.getElementById('edit-location').value = ""; document.getElementById('edit-tags').value = ""; document.getElementById('edit-note').value = ""; document.getElementById('edit-description').value = ""; editModal.classList.remove('hidden'); }
         function openEditModal(dayIndex, itemIndex) { const item = scheduleData[dayIndex].items[itemIndex]; document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = itemIndex; modalTitle.innerText = "編輯行程"; document.getElementById('edit-time').value = item.time; document.getElementById('edit-end-time').value = item.endTime || ""; document.getElementById('edit-type').value = item.type; document.getElementById('edit-title').value = item.title; document.getElementById('edit-location').value = item.location; document.getElementById('edit-tags').value = item.tags?item.tags.join(', '):''; document.getElementById('edit-note').value = item.note||''; document.getElementById('edit-description').value = item.description||''; editModal.classList.remove('hidden'); }
         function closeEditModal() { editModal.classList.add('hidden'); }
@@ -547,6 +483,10 @@
         function switchTab(tabId) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); ['schedule', 'info', 'budget'].forEach(id => { const btn = document.getElementById(`tab-${id}`); const span = btn.querySelector('span'); if(id === tabId) { btn.className = "active-tab flex items-center gap-2 px-5 py-3 tap-effect transition-all duration-300"; span.classList.remove('hidden'); } else { btn.className = "inactive-tab flex items-center gap-2 px-3 py-3 tap-effect transition-all duration-300"; span.classList.add('hidden'); } }); }
 
         init();
+        
+        // 初始天氣渲染
+        generateHourlyWeather();
+
         const style = document.createElement('style');
         style.innerHTML = `@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.4s ease-out; } .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1); }`;
         document.head.appendChild(style);
