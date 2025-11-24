@@ -94,7 +94,7 @@
             <div class="flex items-center gap-2">
                 <h1 class="text-2xl font-bold tracking-wide text-[#433D3C]">台灣五日遊</h1>
                 <button onclick="openDateModal()" class="text-stone-400 hover:text-stone-600 tap-effect p-1">
-                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                    <i data-lucide="settings-2" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
@@ -116,7 +116,7 @@
             <!-- 日期選擇 -->
             <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector"></div>
             
-            <!-- 每小時天氣預測 (新增) -->
+            <!-- 每小時天氣預測 -->
             <div class="bg-white rounded-[24px] p-4 zen-shadow border border-white overflow-hidden">
                 <div class="flex items-center gap-2 mb-3 px-1">
                     <i data-lucide="cloud-sun" class="w-4 h-4 text-blue-400"></i>
@@ -259,7 +259,7 @@
         </nav>
     </div>
 
-    <!-- Modals (詳細, 編輯, 日期) -->
+    <!-- Modals (詳細, 編輯, 行程設定) -->
     <div id="detail-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-md rounded-[32px] p-6 shadow-2xl modal-enter relative max-h-[85vh] overflow-y-auto no-scrollbar">
             <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-6"></div>
@@ -291,12 +291,29 @@
         </div>
     </div>
 
-    <!-- 日期編輯 Modal (新增) -->
+    <!-- 行程設定 Modal (升級版: 包含天數) -->
     <div id="date-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-sm rounded-[32px] p-6 shadow-2xl modal-enter relative">
-            <h3 class="text-lg font-bold mb-4 text-[#433D3C] text-center">設定旅程出發日期</h3>
-            <p class="text-xs text-stone-400 text-center mb-6">這將會自動更新所有行程的日期</p>
-            <input type="date" id="start-date-input" class="w-full bg-white rounded-2xl p-4 text-lg font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center mb-6 text-[#433D3C]">
+            <h3 class="text-lg font-bold mb-6 text-[#433D3C] text-center">行程設定</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-stone-500 font-bold ml-1 block mb-2">出發日期</label>
+                    <input type="date" id="start-date-input" class="w-full bg-white rounded-2xl p-4 text-lg font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center text-[#433D3C]">
+                </div>
+                
+                <div>
+                    <label class="text-xs text-stone-500 font-bold ml-1 block mb-2">旅行總天數</label>
+                    <div class="flex items-center gap-3 bg-white rounded-2xl p-2 shadow-sm">
+                        <button onclick="changeDays(-1)" class="w-10 h-10 rounded-xl bg-stone-100 text-stone-600 flex items-center justify-center font-bold text-xl tap-effect">-</button>
+                        <input type="number" id="trip-days-input" readonly class="flex-1 text-center text-xl font-bold bg-transparent border-none focus:ring-0 text-[#433D3C]" value="5">
+                        <button onclick="changeDays(1)" class="w-10 h-10 rounded-xl bg-stone-100 text-stone-600 flex items-center justify-center font-bold text-xl tap-effect">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-red-400 text-center mt-6 mb-2">* 減少天數將會刪除多餘日期的行程</p>
+
             <div class="flex gap-3">
                 <button onclick="closeDateModal()" class="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-500 font-bold tap-effect">取消</button>
                 <button onclick="updateTravelDates()" class="flex-1 py-3 rounded-2xl bg-[#433D3C] text-white font-bold tap-effect shadow-lg shadow-stone-300">確認更新</button>
@@ -365,38 +382,83 @@
             lucide.createIcons();
         }
 
-        // --- 日期編輯功能 ---
+        // --- 日期與天數編輯功能 ---
         const dateModal = document.getElementById('date-modal');
+        const tripDaysInput = document.getElementById('trip-days-input');
+        
         function openDateModal() {
-            // 預設顯示當前第一天的日期
-            const currentFirstDay = scheduleData[0];
-            const currentYear = new Date().getFullYear(); // 假設當年，實際應用可存年份
-            // 這裡簡化處理，假設格式為 "27" (日) "11" (月)
-            // 為了 input type="date" 正確顯示，我們需要 YYYY-MM-DD
-            // 這裡簡單讓使用者重選，不預填複雜邏輯
+            // 預設顯示當前的資料
+            // 1. 填充日期 (假設 scheduleData[0] 有資料)
+            // 這裡需要簡單的反推年份，因為我們只存了 date/month
+            // 為了簡化體驗，我們讓使用者自己選新的開始日期，不預填舊的 (因為年份未存)
+            // 或者預設為今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start-date-input').value = today;
+            
+            // 2. 填充天數
+            tripDaysInput.value = scheduleData.length;
+            
             dateModal.classList.remove('hidden');
         }
+        
         function closeDateModal() { dateModal.classList.add('hidden'); }
         
+        function changeDays(delta) {
+            let current = parseInt(tripDaysInput.value);
+            let newVal = current + delta;
+            if (newVal < 1) newVal = 1;
+            tripDaysInput.value = newVal;
+        }
+        
         function updateTravelDates() {
-            const input = document.getElementById('start-date-input').value;
-            if (!input) return alert("請選擇日期");
+            const dateInput = document.getElementById('start-date-input').value;
+            const daysInput = parseInt(tripDaysInput.value);
             
-            const startDate = new Date(input);
+            if (!dateInput) return alert("請選擇出發日期");
+            if (!daysInput || daysInput < 1) return alert("天數必須大於 1");
             
-            // 更新每一天的日期
+            const startDate = new Date(dateInput);
+            const currentLength = scheduleData.length;
+            
+            // 1. 調整天數 (陣列長度)
+            if (daysInput > currentLength) {
+                // 增加天數
+                for (let i = currentLength; i < daysInput; i++) {
+                    scheduleData.push({
+                        date: "", // 稍後計算
+                        month: "",
+                        day: `Day ${i + 1}`,
+                        items: [] // 空行程
+                    });
+                }
+            } else if (daysInput < currentLength) {
+                // 減少天數 (直接截斷)
+                if(confirm(`確定要將天數減少為 ${daysInput} 天嗎？後面 ${currentLength - daysInput} 天的行程將被刪除。`)) {
+                    scheduleData.length = daysInput;
+                } else {
+                    return; // 取消操作
+                }
+            }
+            
+            // 2. 重新計算所有日期
             scheduleData.forEach((dayItem, index) => {
                 const d = new Date(startDate);
                 d.setDate(startDate.getDate() + index);
                 
                 dayItem.date = d.getDate().toString();
                 dayItem.month = (d.getMonth() + 1).toString();
-                // Day X 保持不變，或者也可以重置
+                dayItem.day = `Day ${index + 1}`;
             });
             
             saveSchedule();
             renderDaySelector();
-            renderTimeline(currentDayIndex); // 重新渲染當前頁面
+            
+            // 確保 currentDayIndex 不會超出範圍
+            if (currentDayIndex >= scheduleData.length) {
+                currentDayIndex = scheduleData.length - 1;
+            }
+            
+            renderTimeline(currentDayIndex);
             closeDateModal();
         }
 
