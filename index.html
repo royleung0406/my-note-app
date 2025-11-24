@@ -122,8 +122,8 @@
                 <span class="text-sm font-bold">22°C</span>
             </div>
             <div class="flex items-center gap-1 mt-1">
-                <div class="w-1.5 h-1.5 rounded-full bg-green-400" id="status-dot"></div>
-                <span class="text-[10px] text-stone-400" id="status-text">Ready</span>
+                <div class="w-1.5 h-1.5 rounded-full bg-gray-300" id="status-dot"></div>
+                <span class="text-[10px] text-stone-400" id="status-text">Connecting...</span>
             </div>
         </div>
     </header>
@@ -280,7 +280,7 @@
         </nav>
     </div>
 
-    <!-- Modals (詳細, 編輯, 行程設定) -->
+    <!-- Modals -->
     <div id="detail-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-md rounded-[32px] p-6 shadow-2xl modal-enter relative max-h-[85vh] overflow-y-auto no-scrollbar">
             <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-6"></div>
@@ -330,43 +330,60 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // 🔴 請在下方填入您的 Firebase 設定 (取代原本的 placeholder)
+        const firebaseConfig = {
+            // 在這裡貼上您的 Firebase Config
+            // 例如:
+            // apiKey: "AIzaSy...",
+            // authDomain: "...",
+            // ...
+        };
+
+        // ⚠️ 如果您還沒填入設定，下方這行會報錯。
+        // 請務必完成 Firebase 設定後再部署！
+        let app, auth, db;
+        
+        // 簡單檢查是否有填入設定
+        if (Object.keys(firebaseConfig).length === 0) {
+            console.warn("Firebase config is missing! App will run in offline mode (changes won't sync).");
+            document.getElementById('status-text').innerText = "No Cloud";
+            document.getElementById('status-dot').classList.replace('bg-green-400', 'bg-gray-400');
+            document.getElementById('sync-indicator').style.display = 'none';
+        } else {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        }
+
+        // 用固定 ID 確保公開資料一致
+        const appId = 'my-taiwan-trip';
 
         // Cloud Sync Functions
         window.saveToFirestore = async (type, data) => {
-            if (!auth.currentUser) return;
+            if (!auth || !auth.currentUser) return;
             try {
-                // 顯示右上角小同步圖示
                 const indicator = document.getElementById('sync-indicator');
                 indicator.classList.add('show');
-                
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'trip_data', type);
+                const docRef = doc(db, 'trips', appId, 'data', type); // 簡化路徑
                 await setDoc(docRef, { items: data });
-                
-                // 隱藏同步圖示
                 setTimeout(() => indicator.classList.remove('show'), 800);
             } catch (e) { console.error("Sync error:", e); }
         };
 
         async function initFirebase() {
+            if (!auth) return; // No config, skip
+            
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // GitHub Pages 只能用匿名登入
+                await signInAnonymously(auth);
                 
-                const scheduleRef = doc(db, 'artifacts', appId, 'public', 'data', 'trip_data', 'schedule');
-                const expenseRef = doc(db, 'artifacts', appId, 'public', 'data', 'trip_data', 'expenses');
-                const companionRef = doc(db, 'artifacts', appId, 'public', 'data', 'trip_data', 'companions');
+                const scheduleRef = doc(db, 'trips', appId, 'data', 'schedule');
+                const expenseRef = doc(db, 'trips', appId, 'data', 'expenses');
+                const companionRef = doc(db, 'trips', appId, 'data', 'companions');
 
                 // Status Update
                 document.getElementById('status-text').innerText = "Synced";
-                document.getElementById('status-dot').classList.replace('bg-red-400', 'bg-green-400');
+                document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-green-400');
 
                 onSnapshot(scheduleRef, (doc) => {
                     if (doc.exists()) {
@@ -399,9 +416,9 @@
                 });
 
             } catch (e) { 
-                console.error("Auth error:", e); 
-                document.getElementById('status-text').innerText = "Offline";
-                document.getElementById('status-dot').classList.replace('bg-green-400', 'bg-red-400');
+                console.error("Auth/Sync error:", e); 
+                document.getElementById('status-text').innerText = "Error";
+                document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-red-400');
             }
         }
 
@@ -417,18 +434,17 @@
         ];
 
         // Global State
-        window.scheduleData = JSON.parse(JSON.stringify(window.defaultScheduleData)); // Load default immediately
+        window.scheduleData = JSON.parse(JSON.stringify(window.defaultScheduleData));
         window.currentDayIndex = 0;
         window.expenses = [];
         window.companions = ["我"];
         window.currentFilter = 'ALL';
 
-        // Init UI (Render immediately with default/empty data)
         function init() {
             lucide.createIcons();
             generateHourlyWeather();
             renderDaySelector();
-            renderTimeline(0); // Render with default data first
+            renderTimeline(0); 
             renderExpenses();
             
             document.getElementById('expense-amount').addEventListener('input', function(e) {
@@ -437,10 +453,11 @@
             });
         }
 
-        // Cloud Sync Wrappers
+        // Sync Wrappers
         function saveSchedule() { window.saveToFirestore('schedule', window.scheduleData); }
         
-        // Core Logic
+        // --- Core Logic ---
+        // (這部分的邏輯與之前相同，負責渲染畫面與計算)
         window.renderDaySelector = function() { 
             const c = document.getElementById('day-selector'); 
             c.innerHTML = window.scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===window.currentDayIndex?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month}/${d.date}</span></button>`).join(''); 
@@ -473,7 +490,6 @@
             lucide.createIcons();
         }
 
-        // Expense Logic
         window.setFilter = function(name) { window.currentFilter = name; window.renderExpenses(); }
         window.renderFilter = function() { const c = document.getElementById('member-filter-container'); let h = `<button onclick="setFilter('ALL')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === 'ALL' ? 'filter-btn-active' : 'filter-btn-inactive'}">全體</button>`; window.companions.forEach(n => { h += `<button onclick="setFilter('${n}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === n ? 'filter-btn-active' : 'filter-btn-inactive'}">${n}</button>`; }); c.innerHTML = h; }
         
@@ -509,7 +525,6 @@
 
         window.addExpense = function() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount) { alert("請輸入項目和金額"); return; } if(sharedBy.length === 0) { alert("請至少選擇一位分攤對象"); return; } window.expenses.push({ item, amount, payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; window.saveToFirestore('expenses', window.expenses); }
         window.deleteExpense = function(index) { if(confirm('確定刪除這筆紀錄？')) { window.expenses.splice(index, 1); window.saveToFirestore('expenses', window.expenses); } }
-        
         window.promptAddCompanion = function() { const name = prompt("請輸入旅伴名字："); if (name && name.trim() !== "") { if (!window.companions.includes(name.trim())) { window.companions.push(name.trim()); window.saveToFirestore('companions', window.companions); } else { alert("已經在名單內囉！"); } } }
         window.updatePayerSelect = function() { document.getElementById('expense-payer').innerHTML = window.companions.map(c => `<option value="${c}">${c}</option>`).join(''); }
         window.renderShareButtons = function() { document.getElementById('share-buttons-container').innerHTML = window.companions.map(c => `<button type="button" class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors" data-name="${c}" onclick="toggleShare(this)">${c}</button>`).join(''); }
