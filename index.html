@@ -166,13 +166,13 @@
                     </p>
                 </div>
 
-                <!-- 成員濾鏡 (新增功能) -->
+                <!-- 成員濾鏡 -->
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="member-filter-container">
-                    <!-- JS 動態生成: [全體] [我] [Kevin] ... -->
+                    <!-- JS 動態生成 -->
                 </div>
             </div>
             
-            <!-- 新增支出表單 (優化版) -->
+            <!-- 新增支出表單 -->
             <div class="bg-white p-5 rounded-[24px] zen-shadow space-y-5 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-stone-200 to-white"></div>
                 <h3 class="text-stone-800 font-bold text-lg flex items-center gap-2">
@@ -180,14 +180,13 @@
                     記一筆
                 </h3>
 
-                <!-- 金額 (超大輸入框) -->
+                <!-- 金額 -->
                 <div class="bg-stone-50 rounded-2xl px-5 py-4 flex flex-col border border-transparent focus-within:border-[#433D3C] transition-all shadow-inner relative group">
                     <label class="text-[10px] text-stone-400 font-bold mb-1 uppercase">金額 (TWD)</label>
                     <div class="flex items-baseline">
                         <span class="text-stone-400 text-2xl mr-2 font-bold">$</span>
                         <input type="number" id="expense-amount" placeholder="0" class="flex-1 bg-transparent text-4xl focus:outline-none text-stone-800 font-mono font-bold placeholder-stone-200">
                     </div>
-                    <!-- 自動換算 HKD 提示 -->
                     <div class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 font-mono text-sm pointer-events-none group-focus-within:text-stone-400 transition-colors">
                         ≈ HK$ <span id="input-hkd-preview">0</span>
                     </div>
@@ -200,17 +199,13 @@
 
                 <!-- 付款與分攤區塊 -->
                 <div class="grid grid-cols-1 gap-3 bg-stone-50 p-4 rounded-2xl">
-                    <!-- 付款人 -->
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="wallet" class="w-3 h-3"></i> 誰先付錢？</span>
                         <select id="expense-payer" class="bg-white text-stone-700 text-sm font-bold px-3 py-1.5 rounded-lg border-none focus:ring-0 outline-none cursor-pointer shadow-sm">
                             <!-- JS 生成 -->
                         </select>
                     </div>
-                    
                     <div class="h-px bg-stone-200/50 w-full"></div>
-
-                    <!-- 分攤對象 -->
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
                             <span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> 誰要分攤？</span>
@@ -409,13 +404,17 @@
                 
                 const fullAmount = parseInt(ex.amount);
                 let displayAmount = fullAmount;
-                let displayLabel = "總額"; // 預設顯示標籤
+                let displayLabel = "總額"; 
+                let detailText = "";
+                let amountClass = "text-stone-800"; // 預設黑色
 
                 // **重要修改：如果是個人模式，顯示分攤後的金額**
                 if (currentFilter !== 'ALL') {
                     const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1;
                     displayAmount = fullAmount / sharersCount;
                     displayLabel = "應付";
+                    detailText = `(總額 $${fullAmount} ÷ ${sharersCount}人)`; // 顯示計算細節
+                    amountClass = "text-blue-600"; // 個人應付變藍色
                 }
 
                 const amountHKD = Math.round(displayAmount * EXCHANGE_RATE);
@@ -433,8 +432,9 @@
                             </div>
                             <div class="text-right">
                                 <div class="text-[10px] text-stone-300 font-bold mb-0.5 text-right">${displayLabel}</div>
-                                <div class="font-mono font-bold text-stone-800 text-lg">NT$ ${amountTWD}</div>
+                                <div class="font-mono font-bold ${amountClass} text-lg">NT$ ${amountTWD}</div>
                                 <div class="font-mono text-xs text-stone-400">≈ HK$ ${amountHKD}</div>
+                                ${detailText ? `<div class="text-[10px] text-stone-400 mt-0.5">${detailText}</div>` : ''}
                             </div>
                         </div>
                         <div class="flex justify-end border-t border-stone-50 pt-2 mt-1">
