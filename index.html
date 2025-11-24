@@ -512,6 +512,7 @@
                 let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin';
                 let color = item.type==='food'?'text-orange-500 bg-orange-50':item.type==='transport'?'text-blue-500 bg-blue-50':item.type==='shop'?'text-pink-500 bg-pink-50':item.type==='stay'?'text-purple-500 bg-purple-50':'text-stone-500 bg-stone-100';
                 let tags = item.tags ? item.tags.map(t => `<span class="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-stone-50 text-stone-500 ${t.includes('必')?'tag-must-eat':''}">${t}</span>`).join('') : '';
+                
                 let timeDisplay = `<div class="text-center"><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.time}</span>`;
                 if(item.endTime) { timeDisplay += `<span class="text-[10px] text-stone-300 font-mono block leading-tight my-0.5">↓</span><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.endTime}</span>`; }
                 timeDisplay += `</div>`;
