@@ -73,6 +73,10 @@
         
         /* 解決手機點擊延遲 */
         button, .card-clickable { touch-action: manipulation; cursor: pointer; }
+
+        /* 分攤按鈕樣式 */
+        .share-btn-selected { background-color: #433D3C; color: #FFFFFF; border-color: #433D3C; }
+        .share-btn-unselected { background-color: #F5F5F4; color: #A8A29E; border-color: transparent; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-[#FEFDF5]">
@@ -131,28 +135,66 @@
                     </div>
                 </div>
             </div>
-            <!-- 住宿與緊急聯絡省略，保持不變 -->
         </div>
 
         <!-- Tab 3: 記帳 -->
         <div id="view-budget" class="view-section hidden pt-4 space-y-4 animate-fade-in">
+            <!-- 總支出卡片 -->
             <div class="bg-[#2D2A26] rounded-[24px] p-6 text-white zen-shadow relative overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
-                <p class="text-stone-400 text-xs mb-1 font-medium tracking-wide">總支出 (NTD)</p>
-                <h2 class="text-4xl font-bold tracking-wider font-mono" id="total-expense">0</h2>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-stone-400 text-xs mb-1 font-medium tracking-wide">總支出 (NTD)</p>
+                        <h2 class="text-4xl font-bold tracking-wider font-mono" id="total-expense">0</h2>
+                    </div>
+                    <button onclick="promptAddCompanion()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-xs flex items-center gap-1 backdrop-blur-sm transition-colors">
+                        <i data-lucide="user-plus" class="w-3 h-3"></i> 新增旅伴
+                    </button>
+                </div>
+                <!-- 旅伴列表 -->
+                <div id="companion-list-display" class="flex gap-2 mt-4 overflow-x-auto no-scrollbar">
+                    <!-- JS 生成 -->
+                </div>
             </div>
-            <form onsubmit="addExpense(event)" class="bg-white p-3 rounded-[20px] zen-shadow flex gap-2 items-center">
-                <div class="flex-1 bg-stone-50 rounded-2xl px-4 py-2 flex items-center gap-2 border border-transparent focus-within:border-stone-200 transition-colors">
-                    <input type="text" id="expense-item" placeholder="項目" class="flex-1 bg-transparent text-sm focus:outline-none text-stone-700 placeholder-stone-400">
+            
+            <!-- 新增支出表單 -->
+            <div class="bg-white p-4 rounded-[24px] zen-shadow space-y-4">
+                <!-- 第一行：項目與金額 -->
+                <div class="flex gap-2 items-center">
+                    <div class="flex-1 bg-stone-50 rounded-2xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-stone-200 transition-colors">
+                        <input type="text" id="expense-item" placeholder="消費項目 (如: 晚餐)" class="flex-1 bg-transparent text-sm focus:outline-none text-stone-700 placeholder-stone-400">
+                    </div>
+                    <div class="w-28 bg-stone-50 rounded-2xl px-3 py-3 flex items-center border border-transparent focus-within:border-stone-200 transition-colors">
+                        <span class="text-stone-400 text-xs mr-1">$</span>
+                        <input type="number" id="expense-amount" placeholder="金額" class="w-full bg-transparent text-sm focus:outline-none text-stone-700 font-mono font-bold">
+                    </div>
                 </div>
-                <div class="w-24 bg-stone-50 rounded-2xl px-3 py-2 flex items-center border border-transparent focus-within:border-stone-200 transition-colors">
-                    <span class="text-stone-400 text-xs mr-1">$</span>
-                    <input type="number" id="expense-amount" placeholder="0" class="w-full bg-transparent text-sm focus:outline-none text-stone-700 font-mono">
+
+                <!-- 第二行：付款人 -->
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-xs text-stone-400 font-bold">誰先付款？</span>
+                    <select id="expense-payer" class="bg-stone-50 text-stone-600 text-sm rounded-xl px-3 py-1.5 border-none focus:ring-0 outline-none font-medium">
+                        <!-- JS 生成 -->
+                    </select>
                 </div>
-                <button type="submit" class="bg-[#2D2A26] text-white w-10 h-10 rounded-full flex items-center justify-center tap-effect shadow-lg shadow-stone-200">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
+
+                <!-- 第三行：分攤對象 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-xs text-stone-400 font-bold">誰要分攤 (Share)？</span>
+                        <button type="button" onclick="selectAllShares()" class="text-[10px] text-blue-400">全選</button>
+                    </div>
+                    <div id="share-buttons-container" class="flex flex-wrap gap-2">
+                        <!-- JS 生成 toggle buttons -->
+                    </div>
+                </div>
+
+                <!-- 送出按鈕 -->
+                <button onclick="addExpense()" class="w-full bg-[#2D2A26] text-white py-3 rounded-xl flex items-center justify-center gap-2 tap-effect shadow-lg shadow-stone-200 font-bold">
+                    <i data-lucide="plus" class="w-4 h-4"></i> 記一筆
                 </button>
-            </form>
+            </div>
+
             <div id="expense-list" class="space-y-2 pb-10"></div>
         </div>
     </main>
@@ -174,16 +216,11 @@
         </nav>
     </div>
 
-    <!-- 詳細資訊 Modal (新增) -->
+    <!-- 詳細資訊 Modal -->
     <div id="detail-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-md rounded-[32px] p-6 shadow-2xl modal-enter relative max-h-[85vh] overflow-y-auto no-scrollbar">
-            <!-- 裝飾條 -->
             <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-6"></div>
-            
-            <div id="detail-content" class="space-y-5">
-                <!-- JS 動態填入 -->
-            </div>
-
+            <div id="detail-content" class="space-y-5"></div>
             <button onclick="closeDetailModal()" class="absolute top-6 right-6 w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 tap-effect">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
@@ -200,7 +237,6 @@
             <form id="edit-form" class="space-y-4" onsubmit="saveScheduleItem(event)">
                 <input type="hidden" id="edit-day-index">
                 <input type="hidden" id="edit-item-index">
-                
                 <div class="flex gap-3">
                     <div class="w-1/3 space-y-1">
                         <label class="text-xs text-stone-500 font-bold ml-1">時間</label>
@@ -217,12 +253,10 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="space-y-1">
                     <label class="text-xs text-stone-500 font-bold ml-1">標題</label>
                     <input type="text" id="edit-title" required class="w-full bg-white rounded-2xl p-4 text-sm font-bold border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="行程名稱">
                 </div>
-
                 <div class="space-y-1">
                     <label class="text-xs text-stone-500 font-bold ml-1">地點</label>
                     <div class="relative">
@@ -230,22 +264,18 @@
                         <input type="text" id="edit-location" class="w-full bg-white rounded-2xl p-4 pl-10 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="輸入地點關鍵字">
                     </div>
                 </div>
-                
                  <div class="space-y-1">
                     <label class="text-xs text-stone-500 font-bold ml-1">標籤 (逗號分隔)</label>
                     <input type="text" id="edit-tags" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="例如: 必吃, 推薦">
                 </div>
-
                 <div class="space-y-1">
                     <label class="text-xs text-stone-500 font-bold ml-1">簡短備註</label>
                     <input type="text" id="edit-note" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="顯示在卡片上的短句">
                 </div>
-
                 <div class="space-y-1">
-                    <label class="text-xs text-stone-500 font-bold ml-1">詳細介紹 (點擊後顯示)</label>
+                    <label class="text-xs text-stone-500 font-bold ml-1">詳細介紹</label>
                     <textarea id="edit-description" rows="4" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm resize-none" placeholder="這裡可以寫下詳細的攻略、故事或是菜單推薦..."></textarea>
                 </div>
-
                 <div class="pt-4">
                     <button type="submit" class="w-full py-4 rounded-2xl bg-[#433D3C] text-[#FEFDF5] font-bold shadow-lg shadow-stone-300 tap-effect">儲存變更</button>
                 </div>
@@ -254,7 +284,7 @@
     </div>
 
     <script>
-        // --- 預設資料 (包含詳細介紹) ---
+        // --- 資料設定 ---
         const defaultScheduleData = [
             {
                 date: "27",
@@ -262,12 +292,12 @@
                 day: "Day 1",
                 items: [
                     { time: "07:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "歡迎來到台灣！", description: "記得先去領取事先預訂的 WiFi 機或 SIM 卡。機場捷運直達車約 35 分鐘可抵達台北車站。" },
-                    { time: "11:00", title: "民宿放行李", type: "stay", location: "台北", note: "確認 Check-in 時間", description: "如果是使用 Airbnb，記得先與房東聯繫確認大門密碼。如果時間還早，可以問問是否可以先寄放行李。" },
-                    { time: "13:00", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃: 滷味", "必吃: 意麵"], note: "西門町老字號", description: "這家是西門町的老店，滷味非常入味！\n\n必點推薦：\n1. 招牌意麵：麵條Q彈。\n2. 滷蘿蔔：吸滿湯汁，非常甜。\n3. 大豆干與海帶：基本款但很好吃。\n記得加一點他們的特製辣椒醬！" },
-                    { time: "15:00", title: "西門町", type: "sight", location: "西門町", tags: ["逛街", "街頭小吃"], note: "年輕人的潮流聖地", description: "除了逛街買衣服，西門町還有很多街頭藝人表演。\n推薦小吃：阿宗麵線、幸福堂黑糖珍珠鮮奶。\n如果有時間，可以去「唐吉訶德」逛逛。" },
-                    { time: "17:00", title: "妳有咖啡 neo café", type: "food", location: "妳有咖啡 neo cafe", tags: ["推薦: 大人味布丁", "推薦: Pizza"], note: "復古風格咖啡廳", description: "位於二樓的隱密咖啡廳，環境很舒適。\n推薦嘗試他們的「大人味焦糖布丁」，帶點苦甜的口感非常棒。Pizza 也是薄脆型的，很適合當下午茶點心。" },
-                    { time: "19:00", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃: 鴨血", "必吃: 豆腐", "需訂位"], note: "台北最難訂的麻辣鍋", description: "這裡的鴨血被譽為全台北最好吃，口感像果凍一樣滑嫩！\n裝潢走復古台式風格，非常好拍照。\n如果不吃太辣，建議點微辣即可。記得一定要點「油條」涮麻辣湯！" },
-                    { time: "21:00", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["必吃: 水餃", "必吃: 臭豆腐"], note: "在地人最愛的夜市", description: "比起士林夜市，這裡更是在地人的廚房。\n必吃名單：\n1. 來來水餃：皮薄餡多。\n2. 臭老闆現蒸臭豆腐：素食也可吃，湯汁很棒。\n3. 山內雞肉：肉質鮮嫩。" }
+                    { time: "11:00", title: "民宿放行李", type: "stay", location: "台北", note: "確認 Check-in 時間", description: "如果是使用 Airbnb，記得先與房東聯繫確認大門密碼。" },
+                    { time: "13:00", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃: 滷味", "必吃: 意麵"], note: "西門町老字號", description: "滷味非常入味！必點滷蘿蔔、大豆干。" },
+                    { time: "15:00", title: "西門町", type: "sight", location: "西門町", tags: ["逛街"], note: "潮流聖地", description: "推薦小吃：阿宗麵線、幸福堂。" },
+                    { time: "17:00", title: "妳有咖啡 neo café", type: "food", location: "妳有咖啡 neo cafe", tags: ["推薦: 大人味布丁"], note: "復古咖啡廳", description: "二樓隱密咖啡廳，Pizza 也是薄脆型的。" },
+                    { time: "19:00", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃: 鴨血", "需訂位"], note: "台北最難訂", description: "鴨血像果凍一樣滑嫩！記得點油條。" },
+                    { time: "21:00", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["必吃: 水餃"], note: "在地人最愛", description: "推薦：來來水餃、山內雞肉。" }
                 ]
             },
             {
@@ -275,11 +305,11 @@
                 month: "11",
                 day: "Day 2",
                 items: [
-                    { time: "09:00", title: "阜杭豆漿", type: "food", location: "阜杭豆漿", note: "米其林必比登推薦", description: "雖然要排隊，但厚燒餅夾蛋真的非常好吃！鹹豆漿也是一絕。" },
-                    { time: "12:00", title: "九份 / 十分", type: "sight", location: "九份老街", tags: ["必吃: 芋圓", "放天燈"], note: "神隱少女場景", description: "建議先去十分放天燈，再去九份。\n九份老街必吃：阿柑姨芋圓（風景好）、賴阿婆芋圓。\n傍晚時分看著燈籠亮起，非常有氣氛。" },
-                    { time: "16:00", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪"], note: "貓奴天堂", description: "這裡有很多親人的貓咪，請記得不要使用閃光燈拍照，也不要隨意餵食人類食物喔。" },
-                    { time: "19:00", title: "大股熟成燒肉", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["必點: 牛舌", "清酒機"], note: "專人代烤", description: "這家最特別的是有一整面的「清酒販賣機」，投幣就可以喝到各種清酒。\n肉品部分，厚切牛舌是招牌，店員會幫忙烤到完美的熟度。" },
-                    { time: "21:00", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["必吃: 芋丸"], note: "小而美的夜市", description: "動線單純，美食集中。\n推薦：劉芋仔蛋黃芋餅（米其林推薦，要排隊）、圓環邊蚵仔煎。" }
+                    { time: "09:00", title: "阜杭豆漿", type: "food", location: "阜杭豆漿", note: "必比登推薦", description: "厚燒餅夾蛋非常好吃！" },
+                    { time: "12:00", title: "九份 / 十分", type: "sight", location: "九份老街", tags: ["必吃: 芋圓", "放天燈"], note: "神隱少女場景", description: "先去十分放天燈，再去九份吃芋圓。" },
+                    { time: "16:00", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪"], note: "貓奴天堂", description: "不要開閃光燈拍照喔。" },
+                    { time: "19:00", title: "大股熟成燒肉", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["必點: 牛舌"], note: "清酒販賣機", description: "專人代烤，牛舌超好吃。" },
+                    { time: "21:00", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["必吃: 芋丸"], note: "小而美", description: "劉芋仔蛋黃芋餅必排。" }
                 ]
             },
             {
@@ -287,11 +317,11 @@
                 month: "11",
                 day: "Day 3",
                 items: [
-                    { time: "11:00", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["必點: 絲瓜湯包"], note: "不輸鼎泰豐", description: "絲瓜蝦仁湯包非常清爽，羅勒鮮蚵湯包則是很特別的創意口味，值得一試！流沙包當甜點也很棒。" },
-                    { time: "14:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C", "動漫"], note: "科技與動漫", description: "喜歡 3C 產品或動漫公仔的話，這裡可以逛很久。旁邊就是光華商場。" },
-                    { time: "15:00", title: "華山文創園區", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽", "拍照"], note: "文青聚集地", description: "有很多特色小店和展覽，舊酒廠的建築非常有味道，隨便拍都很美。" },
-                    { time: "19:00", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單"], note: "高CP值日料", description: "這家是近年很紅的平價無菜單料理，海鮮非常新鮮。記得一定要準時到，因為是統一出餐。" },
-                    { time: "21:00", title: "饒河夜市", type: "food", location: "饒河街觀光夜市", tags: ["必吃: 胡椒餅"], note: "入口就是美食", description: "福州世祖胡椒餅就在夜市入口，必排！另外陳董藥燉排骨也是冬天進補首選。" }
+                    { time: "11:00", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["必點: 絲瓜湯包"], note: "平價鼎泰豐", description: "羅勒鮮蚵湯包很有特色。" },
+                    { time: "14:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C", "動漫"], note: "科技商場", description: "旁邊就是光華商場。" },
+                    { time: "15:00", title: "華山文創園區", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽"], note: "文青必去", description: "舊酒廠改建，很好拍照。" },
+                    { time: "19:00", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單"], note: "高CP值", description: "記得準時到，統一出餐。" },
+                    { time: "21:00", title: "饒河夜市", type: "food", location: "饒河街觀光夜市", tags: ["必吃: 胡椒餅"], note: "藥燉排骨", description: "陳董藥燉排骨冬天必吃。" }
                 ]
             },
             {
@@ -299,11 +329,11 @@
                 month: "11",
                 day: "Day 4",
                 items: [
-                    { time: "12:00", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["逛街"], note: "永和在地百貨", description: "比較在地化的百貨公司，B1 美食街選擇不少。" },
-                    { time: "14:00", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["逛街"], note: "永和人的夜市", description: "雖然是夜市，但下午也有不少店家營業。這裡的路比較寬，逛起來很舒服。" },
-                    { time: "16:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["推薦: 開心果"], note: "義式冰淇淋", description: "口味非常道地的義式冰淇淋，開心果口味濃郁，水果系列也很清爽。" },
-                    { time: "19:00", title: "金月日本鍋", type: "food", location: "金月日本鍋料理擔當", tags: ["必點: 清酒湯底"], note: "頂級火鍋", description: "全程專人桌邊服務，清酒湯底非常特別，煮海鮮和和牛都非常鮮甜。" },
-                    { time: "21:00", title: "臨江街夜市", type: "food", location: "臨江街觀光夜市", tags: ["必吃: 湯圓"], note: "通化夜市", description: "御品元冰火湯圓必吃！熱熱的芝麻湯圓放在刨冰上，淋上桂花蜜，超級好吃。" }
+                    { time: "12:00", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["逛街"], note: "永和百貨", description: "在地百貨公司。" },
+                    { time: "14:00", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["逛街"], note: "路寬好逛", description: "下午也有店家營業。" },
+                    { time: "16:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["推薦: 開心果"], note: "義式冰淇淋", description: "口味非常道地。" },
+                    { time: "19:00", title: "金月日本鍋", type: "food", location: "金月日本鍋料理擔當", tags: ["必點: 清酒湯底"], note: "專人服務", description: "清酒湯底煮海鮮很鮮甜。" },
+                    { time: "21:00", title: "臨江街夜市", type: "food", location: "臨江街觀光夜市", tags: ["必吃: 湯圓"], note: "通化夜市", description: "御品元冰火湯圓必吃。" }
                 ]
             },
             {
@@ -311,16 +341,19 @@
                 month: "11",
                 day: "Day 5",
                 items: [
-                    { time: "12:00", title: "Check Out", type: "stay", location: "台北", note: "行李寄放?", description: "最後一天，確認東西都帶齊了嗎？" },
-                    { time: "14:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet"], note: "最後衝刺", description: "美式露天 Outlet，就在桃園高鐵站/機捷旁邊。各大品牌都有，折扣有時候很不錯。" },
-                    { time: "22:00", title: "回香港", type: "transport", location: "台灣桃園國際機場", note: "平安回家", description: "建議提早 2.5 小時抵達機場辦理登機。" }
+                    { time: "12:00", title: "Check Out", type: "stay", location: "台北", note: "行李寄放?", description: "檢查隨身物品。" },
+                    { time: "14:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet"], note: "最後衝刺", description: "美式露天 Outlet，近高鐵站。" },
+                    { time: "22:00", title: "回香港", type: "transport", location: "台灣桃園國際機場", note: "平安回家", description: "提早2.5小時到機場。" }
                 ]
             }
         ];
 
         let scheduleData = [];
         let currentDayIndex = 0;
+        // 記帳相關變數
         let expenses = JSON.parse(localStorage.getItem('tw_trip_expenses') || '[]');
+        // 預設旅伴只有「我」
+        let companions = JSON.parse(localStorage.getItem('tw_trip_companions') || '["我"]');
 
         function init() {
             const savedSchedule = localStorage.getItem('tw_trip_schedule');
@@ -333,7 +366,12 @@
             lucide.createIcons();
             renderDaySelector();
             renderTimeline(0);
+            
+            // 初始化記帳頁面元件
+            renderCompanions();
             renderExpenses();
+            updatePayerSelect();
+            renderShareButtons();
         }
 
         function saveSchedule() {
@@ -348,6 +386,152 @@
             }
         }
 
+        // --- 旅伴功能 ---
+        function promptAddCompanion() {
+            const name = prompt("請輸入旅伴名字：");
+            if (name && name.trim() !== "") {
+                if (!companions.includes(name.trim())) {
+                    companions.push(name.trim());
+                    localStorage.setItem('tw_trip_companions', JSON.stringify(companions));
+                    renderCompanions();
+                    updatePayerSelect();
+                    renderShareButtons();
+                } else {
+                    alert("這位旅伴已經在名單內囉！");
+                }
+            }
+        }
+
+        function removeCompanion(name) {
+            if(name === "我") {
+                alert("不能刪除自己喔！");
+                return;
+            }
+            if(confirm(`確定要刪除 ${name} 嗎？`)) {
+                companions = companions.filter(c => c !== name);
+                localStorage.setItem('tw_trip_companions', JSON.stringify(companions));
+                renderCompanions();
+                updatePayerSelect();
+                renderShareButtons();
+            }
+        }
+
+        function renderCompanions() {
+            const container = document.getElementById('companion-list-display');
+            container.innerHTML = companions.map(c => `
+                <div class="flex-shrink-0 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs text-white/90 flex items-center gap-1 border border-white/10">
+                    <span>${c}</span>
+                    ${c !== '我' ? `<button onclick="removeCompanion('${c}')" class="ml-1 hover:text-red-300">×</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updatePayerSelect() {
+            const select = document.getElementById('expense-payer');
+            select.innerHTML = companions.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        function renderShareButtons() {
+            const container = document.getElementById('share-buttons-container');
+            container.innerHTML = companions.map(c => `
+                <button type="button" 
+                    class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors"
+                    data-name="${c}"
+                    onclick="toggleShare(this)">
+                    ${c}
+                </button>
+            `).join('');
+        }
+
+        function toggleShare(btn) {
+            if (btn.classList.contains('share-btn-selected')) {
+                btn.classList.remove('share-btn-selected');
+                btn.classList.add('share-btn-unselected');
+            } else {
+                btn.classList.remove('share-btn-unselected');
+                btn.classList.add('share-btn-selected');
+            }
+        }
+
+        function selectAllShares() {
+            const btns = document.querySelectorAll('.share-toggle-btn');
+            btns.forEach(btn => {
+                btn.classList.remove('share-btn-unselected');
+                btn.classList.add('share-btn-selected');
+            });
+        }
+
+        // --- 記帳核心 ---
+        function renderExpenses() {
+            const list = document.getElementById('expense-list');
+            const totalEl = document.getElementById('total-expense');
+            let total = 0;
+            
+            list.innerHTML = expenses.map((ex, i) => {
+                total += parseInt(ex.amount);
+                
+                // 處理舊資料相容性 (如果舊資料沒有 payer/sharedBy)
+                const payer = ex.payer || "我";
+                const sharedBy = ex.sharedBy || ["我"];
+                const shareText = sharedBy.length === companions.length ? "全員分攤" : sharedBy.join(", ");
+
+                return `
+                    <div class="flex flex-col bg-white p-4 rounded-[20px] shadow-sm mb-2 border border-stone-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-bold text-stone-700">${ex.item}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="font-mono font-bold text-stone-800">NT$ ${ex.amount}</span>
+                                <button onclick="deleteExpense(${i})" class="text-stone-300 hover:text-red-400 tap-effect"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-stone-400 bg-stone-50 px-2 py-0.5 rounded text-xs">由 <strong class="text-stone-600">${payer}</strong> 支付</span>
+                            <span class="text-stone-400">分攤: ${shareText}</span>
+                        </div>
+                    </div>`;
+            }).reverse().join('');
+            
+            totalEl.innerText = total.toLocaleString();
+            localStorage.setItem('tw_trip_expenses', JSON.stringify(expenses));
+            lucide.createIcons();
+        }
+
+        function addExpense() {
+            const item = document.getElementById('expense-item').value;
+            const amount = document.getElementById('expense-amount').value;
+            const payer = document.getElementById('expense-payer').value;
+            
+            // 獲取被勾選的分攤人
+            const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected');
+            const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name'));
+
+            if(!item || !amount) {
+                alert("請輸入項目和金額");
+                return;
+            }
+            if(sharedBy.length === 0) {
+                alert("請至少選擇一位分攤對象");
+                return;
+            }
+
+            expenses.push({ item, amount, payer, sharedBy });
+            
+            // 清空欄位
+            document.getElementById('expense-item').value = '';
+            document.getElementById('expense-amount').value = '';
+            // 不重置付款人和分攤人，方便連續記帳
+            
+            renderExpenses();
+        }
+
+        function deleteExpense(index) {
+            if(confirm('確定刪除這筆紀錄？')) {
+                expenses.splice(expenses.length - 1 - index, 1);
+                renderExpenses();
+            }
+        }
+
+        // --- 其他基礎功能 (保持不變) ---
         function renderDaySelector() {
             const container = document.getElementById('day-selector');
             container.innerHTML = scheduleData.map((day, index) => `
@@ -391,7 +575,6 @@
                 let icon = 'map-pin';
                 let iconColor = 'text-stone-500';
                 let iconBg = 'bg-stone-100';
-                
                 if(item.type === 'food') { icon = 'utensils'; iconColor='text-orange-500'; iconBg='bg-orange-50'; }
                 if(item.type === 'transport') { icon = 'bus'; iconColor='text-blue-500'; iconBg='bg-blue-50'; }
                 if(item.type === 'shop') { icon = 'shopping-bag'; iconColor='text-pink-500'; iconBg='bg-pink-50'; }
@@ -407,8 +590,6 @@
                     }).join('') + `</div>`;
                 }
 
-                // 注意：這裡增加了 onclick 事件來打開詳細資訊 Modal
-                // 編輯和刪除按鈕增加了 stopPropagation 防止觸發卡片點擊
                 return `
                 <div onclick="openDetailModal(${dayIndex}, ${itemIndex})" class="card-clickable bg-white rounded-[24px] p-5 zen-shadow relative overflow-hidden animate-slide-up mb-4 border border-white active:bg-stone-50 transition-colors">
                     <div class="flex gap-4">
@@ -423,25 +604,17 @@
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-[#433D3C] text-lg leading-tight truncate mr-2">${item.title}</h3>
                             </div>
-                            
                             <div class="flex items-center gap-2 mt-2 mb-3">
                                 <div class="text-xs flex items-center gap-1.5 bg-stone-50 text-stone-500 px-3 py-1.5 rounded-xl max-w-full truncate font-medium">
                                     <i data-lucide="map-pin" class="w-3 h-3 flex-shrink-0"></i> 
                                     <span class="truncate">${item.location || '設定地點'}</span>
                                 </div>
                             </div>
-                            
                             ${item.note ? `<p class="text-xs text-stone-400 mt-1 line-clamp-2 leading-relaxed bg-[#FEFDF5] p-2 rounded-lg">${item.note}</p>` : ''}
                             ${tagsHtml}
-
-                            <!-- 編輯與刪除按鈕 (右下角，始終顯示) -->
                             <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-stone-50">
-                                <button onclick="event.stopPropagation(); openEditModal(${dayIndex}, ${itemIndex})" class="px-3 py-1.5 bg-stone-100 rounded-lg text-xs font-bold text-stone-500 tap-effect flex items-center gap-1">
-                                    <i data-lucide="pencil" class="w-3 h-3"></i> 編輯
-                                </button>
-                                <button onclick="event.stopPropagation(); deleteScheduleItem(${dayIndex}, ${itemIndex})" class="px-3 py-1.5 bg-red-50 rounded-lg text-xs font-bold text-red-400 tap-effect flex items-center gap-1">
-                                    <i data-lucide="trash-2" class="w-3 h-3"></i> 刪除
-                                </button>
+                                <button onclick="event.stopPropagation(); openEditModal(${dayIndex}, ${itemIndex})" class="px-3 py-1.5 bg-stone-100 rounded-lg text-xs font-bold text-stone-500 tap-effect flex items-center gap-1"><i data-lucide="pencil" class="w-3 h-3"></i> 編輯</button>
+                                <button onclick="event.stopPropagation(); deleteScheduleItem(${dayIndex}, ${itemIndex})" class="px-3 py-1.5 bg-red-50 rounded-lg text-xs font-bold text-red-400 tap-effect flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> 刪除</button>
                             </div>
                         </div>
                     </div>
@@ -449,94 +622,45 @@
                 `;
             }).join('');
 
-            html += `
-                <button onclick="openAddModal(${dayIndex})" class="w-full py-4 rounded-[24px] border-2 border-dashed border-stone-200 text-stone-300 hover:border-stone-300 hover:text-stone-500 transition-all flex items-center justify-center gap-2 tap-effect mt-2 bg-white/50">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                    <span class="font-bold">新增行程</span>
-                </button>
-            `;
-
+            html += `<button onclick="openAddModal(${dayIndex})" class="w-full py-4 rounded-[24px] border-2 border-dashed border-stone-200 text-stone-300 hover:border-stone-300 hover:text-stone-500 transition-all flex items-center justify-center gap-2 tap-effect mt-2 bg-white/50"><i data-lucide="plus" class="w-5 h-5"></i><span class="font-bold">新增行程</span></button>`;
             container.innerHTML = html;
             lucide.createIcons();
         }
 
-        // --- 詳細資訊 Modal ---
+        // Modal 相關功能保持不變 (詳細資訊, 編輯, 新增行程)
         const detailModal = document.getElementById('detail-modal');
         const detailContent = document.getElementById('detail-content');
-
         function openDetailModal(dayIndex, itemIndex) {
             const item = scheduleData[dayIndex].items[itemIndex];
+            const descriptionHtml = item.description ? item.description.split('\n').map(line => `<p class="mb-2">${line}</p>`).join('') : '<p class="text-stone-400 italic">暫無詳細介紹...</p>';
             
-            // 處理多行文字換行
-            const descriptionHtml = item.description 
-                ? item.description.split('\n').map(line => `<p class="mb-2">${line}</p>`).join('') 
-                : '<p class="text-stone-400 italic">暫無詳細介紹，點擊編輯來新增筆記...</p>';
-
             let icon = 'map-pin';
             if(item.type === 'food') icon = 'utensils';
             if(item.type === 'transport') icon = 'bus';
             if(item.type === 'shop') icon = 'shopping-bag';
             if(item.type === 'stay') icon = 'bed';
 
-            let tagsHtml = '';
-            if(item.tags && item.tags.length > 0) {
-                tagsHtml = `<div class="flex flex-wrap gap-2 mb-4">` + 
-                item.tags.map(tag => {
-                    let className = 'bg-stone-100 text-stone-500';
-                    if(tag.includes('必吃') || tag.includes('必點')) className = 'tag-must-eat';
-                    return `<span class="text-xs px-3 py-1 rounded-full font-bold ${className}">${tag}</span>`;
-                }).join('') + `</div>`;
-            }
-
             detailContent.innerHTML = `
                 <div class="flex items-start justify-between mb-2">
-                    <div class="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-600">
-                        <i data-lucide="${icon}" class="w-6 h-6"></i>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-2xl font-mono font-bold text-stone-800">${item.time}</p>
-                        <p class="text-xs text-stone-400 font-bold">11月${scheduleData[dayIndex].date}日</p>
-                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+                    <div class="text-right"><p class="text-2xl font-mono font-bold text-stone-800">${item.time}</p><p class="text-xs text-stone-400 font-bold">11月${scheduleData[dayIndex].date}日</p></div>
                 </div>
-                
                 <h2 class="text-2xl font-bold text-[#433D3C] mb-1 leading-tight">${item.title}</h2>
-                
-                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" 
-                    class="inline-flex items-center gap-1.5 text-blue-500 text-sm font-bold mb-4 tap-effect">
-                    <i data-lucide="map-pin" class="w-4 h-4"></i> ${item.location || '設定地點'} <i data-lucide="external-link" class="w-3 h-3"></i>
-                </button>
-
-                ${tagsHtml}
-
-                <div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
-                    <h4 class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-wider">ABOUT</h4>
-                    <div class="text-stone-600 text-sm leading-relaxed space-y-2">
-                        ${descriptionHtml}
-                    </div>
-                </div>
+                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" class="inline-flex items-center gap-1.5 text-blue-500 text-sm font-bold mb-4 tap-effect"><i data-lucide="map-pin" class="w-4 h-4"></i> ${item.location || '設定地點'} <i data-lucide="external-link" class="w-3 h-3"></i></button>
+                <div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><h4 class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-wider">ABOUT</h4><div class="text-stone-600 text-sm leading-relaxed space-y-2">${descriptionHtml}</div></div>
             `;
-            
             detailModal.classList.remove('hidden');
             lucide.createIcons();
         }
+        function closeDetailModal() { detailModal.classList.add('hidden'); }
+        detailModal.addEventListener('click', (e) => { if (e.target === detailModal) closeDetailModal(); });
 
-        function closeDetailModal() {
-            detailModal.classList.add('hidden');
-        }
-
-        detailModal.addEventListener('click', (e) => {
-            if (e.target === detailModal) closeDetailModal();
-        });
-
-        // --- 編輯功能 ---
         const editModal = document.getElementById('edit-modal');
         const modalTitle = document.getElementById('modal-title');
-        
         function openAddModal(dayIndex) {
             document.getElementById('edit-day-index').value = dayIndex;
             document.getElementById('edit-item-index').value = -1;
             modalTitle.innerText = "新增行程";
-            
             document.getElementById('edit-time').value = "12:00";
             document.getElementById('edit-type').value = "sight";
             document.getElementById('edit-title').value = "";
@@ -544,16 +668,13 @@
             document.getElementById('edit-tags').value = "";
             document.getElementById('edit-note').value = "";
             document.getElementById('edit-description').value = "";
-            
             editModal.classList.remove('hidden');
         }
-
         function openEditModal(dayIndex, itemIndex) {
             const item = scheduleData[dayIndex].items[itemIndex];
             document.getElementById('edit-day-index').value = dayIndex;
             document.getElementById('edit-item-index').value = itemIndex;
             modalTitle.innerText = "編輯行程";
-            
             document.getElementById('edit-time').value = item.time;
             document.getElementById('edit-type').value = item.type;
             document.getElementById('edit-title').value = item.title;
@@ -561,19 +682,13 @@
             document.getElementById('edit-tags').value = item.tags ? item.tags.join(', ') : '';
             document.getElementById('edit-note').value = item.note || '';
             document.getElementById('edit-description').value = item.description || '';
-            
             editModal.classList.remove('hidden');
         }
-
-        function closeEditModal() {
-            editModal.classList.add('hidden');
-        }
-
+        function closeEditModal() { editModal.classList.add('hidden'); }
         function saveScheduleItem(e) {
             e.preventDefault();
             const dayIndex = parseInt(document.getElementById('edit-day-index').value);
             const itemIndex = parseInt(document.getElementById('edit-item-index').value);
-            
             const newItem = {
                 time: document.getElementById('edit-time').value,
                 type: document.getElementById('edit-type').value,
@@ -583,62 +698,17 @@
                 note: document.getElementById('edit-note').value,
                 description: document.getElementById('edit-description').value
             };
-
-            if (itemIndex === -1) {
-                scheduleData[dayIndex].items.push(newItem);
-            } else {
-                scheduleData[dayIndex].items[itemIndex] = newItem;
-            }
-
+            if (itemIndex === -1) { scheduleData[dayIndex].items.push(newItem); } 
+            else { scheduleData[dayIndex].items[itemIndex] = newItem; }
             saveSchedule();
             renderTimeline(dayIndex);
             closeEditModal();
         }
-
         function deleteScheduleItem(dayIndex, itemIndex) {
             if(confirm("確定要刪除這個行程嗎？")) {
                 scheduleData[dayIndex].items.splice(itemIndex, 1);
                 saveSchedule();
                 renderTimeline(dayIndex);
-            }
-        }
-
-        // --- 記帳與分頁切換 (保持不變) ---
-        function renderExpenses() {
-            const list = document.getElementById('expense-list');
-            const totalEl = document.getElementById('total-expense');
-            let total = 0;
-            list.innerHTML = expenses.map((ex, i) => {
-                total += parseInt(ex.amount);
-                return `
-                    <div class="flex justify-between items-center bg-white p-4 rounded-[20px] shadow-sm mb-2 border border-stone-100">
-                        <span class="text-sm font-bold text-stone-600">${ex.item}</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono font-bold text-stone-800">NT$ ${ex.amount}</span>
-                            <button onclick="deleteExpense(${i})" class="w-6 h-6 rounded-full bg-stone-50 flex items-center justify-center text-stone-300 hover:text-red-400 tap-effect"><i data-lucide="x" class="w-3 h-3"></i></button>
-                        </div>
-                    </div>`;
-            }).reverse().join('');
-            totalEl.innerText = total.toLocaleString();
-            localStorage.setItem('tw_trip_expenses', JSON.stringify(expenses));
-            lucide.createIcons();
-        }
-
-        function addExpense(e) {
-            e.preventDefault();
-            const item = document.getElementById('expense-item').value;
-            const amount = document.getElementById('expense-amount').value;
-            if(!item || !amount) return;
-            expenses.push({ item, amount });
-            document.getElementById('expense-item').value = '';
-            document.getElementById('expense-amount').value = '';
-            renderExpenses();
-        }
-
-        function deleteExpense(index) {
-            if(confirm('確定刪除這筆紀錄？')) {
-                expenses.splice(expenses.length - 1 - index, 1);
-                renderExpenses();
             }
         }
 
