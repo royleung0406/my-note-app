@@ -26,8 +26,11 @@
     <style>
         :root {
             --bg-color: #FEFDF5;
+            --card-bg: #FFFFFF;
             --text-main: #433D3C;
             --text-sub: #9CA3AF;
+            --accent: #D4C4B7;
+            --highlight: #F43F5E;
         }
 
         body {
@@ -51,7 +54,12 @@
         .tag-nav { background: #F3F4F6; color: #374151; }
         .tag-tips { background: #E0F2FE; color: #0369A1; }
 
-        .active-tab { color: #57534E; font-weight: 700; background-color: #F5F5F4; border-radius: 16px; }
+        .active-tab {
+            color: #57534E;
+            font-weight: 700;
+            background-color: #F5F5F4;
+            border-radius: 16px;
+        }
         .inactive-tab { color: #A8A29E; }
 
         .tap-effect:active { opacity: 0.8; transform: scale(0.98); transition: transform 0.1s; }
@@ -64,13 +72,13 @@
         .modal-enter { animation: slide-up-spring 0.4s ease-out forwards; }
         
         button, .card-clickable { touch-action: manipulation; cursor: pointer; }
+
         .share-btn-selected { background-color: #433D3C; color: #FFFFFF; border-color: #433D3C; }
         .share-btn-unselected { background-color: #F5F5F4; color: #A8A29E; border-color: transparent; }
         .filter-btn-active { background-color: rgba(255,255,255,0.2); color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); }
         .filter-btn-inactive { color: rgba(255,255,255,0.6); }
         .weather-scroll-item { min-width: 60px; }
         
-        /* 載入中遮罩 */
         #sync-indicator {
             position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
             background: rgba(67, 61, 60, 0.8); color: white;
@@ -85,142 +93,182 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-[#FEFDF5]">
 
-    <!-- 同步提示 -->
-    <div id="sync-indicator">
+    <div id="sync-indicator" class="show">
         <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i>
         <span>雲端同步中...</span>
     </div>
 
-    <!-- VIEW 0: 旅程列表 (首頁) -->
-    <div id="view-home" class="h-full flex flex-col p-6 animate-fade-in">
-        <header class="mb-8 pt-safe-top flex justify-between items-end">
-            <div>
-                <p class="text-xs text-stone-400 font-bold tracking-widest mb-1">TRAVEL LOG</p>
-                <h1 class="text-3xl font-black tracking-wide text-[#433D3C]">我的旅程</h1>
-            </div>
-            <button onclick="createNewTrip()" class="bg-[#433D3C] text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg tap-effect">
-                <i data-lucide="plus" class="w-6 h-6"></i>
-            </button>
-        </header>
-
-        <div id="trip-list-container" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-10">
-            <!-- JS 動態生成旅程卡片 -->
-            <div class="text-center text-stone-400 mt-20">
-                <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2"></i>
-                <p>載入旅程中...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- VIEW 1: 旅程詳情 (原本的 App 介面) -->
-    <div id="view-app" class="h-full flex flex-col hidden">
-        <!-- 頂部資訊 -->
-        <header class="bg-[#FEFDF5]/90 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 flex justify-between items-end border-b border-stone-100/50">
-            <div class="flex items-center gap-3">
-                <button onclick="backToHome()" class="bg-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm text-stone-400 hover:text-stone-600 tap-effect">
-                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+    <!-- 頂部資訊 -->
+    <header class="bg-[#FEFDF5]/90 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 flex justify-between items-end">
+        <div>
+            <p class="text-[10px] text-gray-400 tracking-widest mb-1 font-bold">TAIPEI TRIP</p>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold tracking-wide text-[#433D3C]">台灣五日遊</h1>
+                <button onclick="openDateModal()" class="text-stone-400 hover:text-stone-600 tap-effect p-1">
+                    <i data-lucide="settings-2" class="w-5 h-5"></i>
                 </button>
-                <div>
-                    <p class="text-[10px] text-gray-400 tracking-widest mb-0.5 font-bold">CURRENT TRIP</p>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-xl font-bold tracking-wide text-[#433D3C]" id="header-trip-title">旅程標題</h1>
-                        <button onclick="openDateModal()" class="text-stone-300 hover:text-stone-500 tap-effect"><i data-lucide="settings-2" class="w-4 h-4"></i></button>
-                    </div>
-                </div>
             </div>
-            <div class="text-right flex flex-col items-end gap-1">
-                 <div class="flex items-center gap-1 text-gray-600 bg-white px-2 py-1 rounded-lg shadow-sm border border-stone-100">
-                    <i data-lucide="cloud" class="w-3 h-3 text-stone-400"></i>
-                    <span class="text-xs font-bold">22°C</span>
-                </div>
-                <div class="flex items-center gap-1 mt-0.5">
-                    <div class="w-1.5 h-1.5 rounded-full bg-gray-300" id="status-dot"></div>
-                    <span class="text-[8px] text-stone-300" id="status-text">Ready</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- 主要內容區 -->
-        <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-28 relative px-4">
-            
-            <!-- Tab 1: 行程 -->
-            <div id="view-schedule" class="view-section pt-2 space-y-6 animate-fade-in">
-                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector"></div>
-                <div class="bg-white rounded-[24px] p-4 zen-shadow border border-white overflow-hidden">
-                    <div class="flex items-center gap-2 mb-3 px-1">
-                        <i data-lucide="cloud-sun" class="w-4 h-4 text-blue-400"></i>
-                        <span class="text-xs font-bold text-stone-500">預報</span>
-                    </div>
-                    <div class="flex overflow-x-auto no-scrollbar gap-2" id="hourly-weather-container"></div>
-                </div>
-                <div id="timeline-container" class="space-y-4 pb-10"></div>
-            </div>
-
-            <!-- Tab 2: 資訊 -->
-            <div id="view-info" class="view-section hidden pt-4 space-y-6 animate-fade-in">
-                <div class="bg-white rounded-[24px] p-6 zen-shadow">
-                    <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500"><i data-lucide="plane-takeoff" class="w-4 h-4"></i></div>
-                        航班資訊
-                    </h3>
-                    <div class="space-y-6" id="flight-info-placeholder">
-                        <div class="p-4 bg-stone-50 rounded-xl text-center text-stone-400 text-sm">可在這裡加入航班資訊功能 (待開發)</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab 3: 記帳 -->
-            <div id="view-budget" class="view-section hidden pt-4 space-y-6 animate-fade-in">
-                <div class="bg-[#2D2A26] rounded-[24px] p-6 text-white zen-shadow relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
-                    <div class="flex justify-between items-start mb-4">
-                        <p class="text-stone-400 text-xs font-medium tracking-wide uppercase" id="budget-title">總消費 (ALL)</p>
-                        <button onclick="promptAddCompanion()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-[10px] flex items-center gap-1 backdrop-blur-sm transition-colors"><i data-lucide="user-plus" class="w-3 h-3"></i> 旅伴</button>
-                    </div>
-                    <div class="mb-6">
-                        <div class="flex items-baseline gap-2"><span class="text-lg text-stone-400 font-bold">NT$</span><h2 class="text-5xl font-bold tracking-tighter font-mono" id="total-expense-twd">0</h2></div>
-                        <p class="text-stone-400 text-sm mt-1 font-medium flex items-center gap-1"><span class="bg-white/10 px-2 py-0.5 rounded text-xs">約 HK$ <span id="total-expense-hkd" class="font-mono">0</span></span></p>
-                    </div>
-                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="member-filter-container"></div>
-                </div>
-                
-                <div class="bg-white p-5 rounded-[24px] zen-shadow space-y-5 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-stone-200 to-white"></div>
-                    <h3 class="text-stone-800 font-bold text-lg flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="receipt" class="w-4 h-4"></i></div> 記一筆</h3>
-                    <div class="bg-stone-50 rounded-2xl px-5 py-4 flex flex-col border border-transparent focus-within:border-[#433D3C] transition-all shadow-inner relative group">
-                        <label class="text-[10px] text-stone-400 font-bold mb-1 uppercase">金額 (TWD)</label>
-                        <div class="flex items-baseline"><span class="text-stone-400 text-2xl mr-2 font-bold">$</span><input type="number" id="expense-amount" placeholder="0" class="flex-1 bg-transparent text-4xl focus:outline-none text-stone-800 font-mono font-bold placeholder-stone-200"></div>
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 font-mono text-sm pointer-events-none group-focus-within:text-stone-400 transition-colors">≈ HK$ <span id="input-hkd-preview">0</span></div>
-                    </div>
-                    <div class="bg-stone-50 rounded-2xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-stone-200 transition-colors"><input type="text" id="expense-item" placeholder="消費項目" class="flex-1 bg-transparent text-base focus:outline-none text-stone-700 placeholder-stone-400 font-medium"></div>
-                    <div class="grid grid-cols-1 gap-3 bg-stone-50 p-4 rounded-2xl">
-                        <div class="flex items-center justify-between"><span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="wallet" class="w-3 h-3"></i> 誰先付錢？</span><select id="expense-payer" class="bg-white text-stone-700 text-sm font-bold px-3 py-1.5 rounded-lg border-none focus:ring-0 outline-none cursor-pointer shadow-sm"></select></div>
-                        <div class="h-px bg-stone-200/50 w-full"></div>
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center"><span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> 誰要分攤？</span><button type="button" onclick="selectAllShares()" class="text-[10px] bg-blue-50 text-blue-500 font-bold px-2 py-1 rounded hover:bg-blue-100 transition-colors">全選</button></div>
-                            <div id="share-buttons-container" class="flex flex-wrap gap-2"></div>
-                        </div>
-                    </div>
-                    <button onclick="addExpense()" class="w-full bg-[#433D3C] text-white py-4 rounded-2xl flex items-center justify-center gap-2 tap-effect shadow-lg shadow-stone-200 font-bold text-lg active:scale-[0.98] transition-transform"><i data-lucide="plus" class="w-5 h-5"></i> 加入記帳</button>
-                </div>
-                <div class="flex justify-between items-end px-2"><h4 class="text-stone-400 text-xs font-bold tracking-widest uppercase">交易紀錄 (HISTORY)</h4><span class="text-[10px] text-stone-300" id="list-filter-status">顯示全部</span></div>
-                <div id="expense-list" class="space-y-3 pb-10 min-h-[100px]"></div>
-            </div>
-        </main>
-
-        <!-- 底部導航 -->
-        <div class="fixed bottom-6 left-6 right-6 z-30">
-            <nav class="bg-white/90 backdrop-blur-xl rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] p-2 border border-white/50">
-                <div class="flex justify-around items-center">
-                    <button onclick="switchTab('schedule')" id="tab-schedule" class="active-tab flex items-center gap-2 px-4 py-3 tap-effect transition-all duration-300"><i data-lucide="map" class="w-5 h-5"></i><span class="text-xs font-bold">行程</span></button>
-                    <button onclick="switchTab('info')" id="tab-info" class="inactive-tab flex items-center gap-2 px-4 py-3 tap-effect transition-all duration-300"><i data-lucide="sparkles" class="w-5 h-5"></i><span class="text-xs font-bold hidden">資訊</span></button>
-                    <button onclick="switchTab('budget')" id="tab-budget" class="inactive-tab flex items-center gap-2 px-4 py-3 tap-effect transition-all duration-300"><i data-lucide="wallet" class="w-5 h-5"></i><span class="text-xs font-bold hidden">記帳</span></button>
-                </div>
-            </nav>
         </div>
+        <div class="text-right flex flex-col items-end gap-1">
+             <div class="flex items-center gap-1 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm border border-stone-100">
+                <i data-lucide="cloud" class="w-4 h-4 text-stone-400"></i>
+                <span class="text-sm font-bold">22°C</span>
+            </div>
+            <div class="flex items-center gap-1 mt-1">
+                <div class="w-1.5 h-1.5 rounded-full bg-gray-300" id="status-dot"></div>
+                <span class="text-[10px] text-stone-400" id="status-text">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-28 relative px-4">
+        
+        <!-- Tab 1: 行程 -->
+        <div id="view-schedule" class="view-section pt-2 space-y-6 animate-fade-in">
+            
+            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector"></div>
+            
+            <div class="bg-white rounded-[24px] p-4 zen-shadow border border-white overflow-hidden">
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <i data-lucide="cloud-sun" class="w-4 h-4 text-blue-400"></i>
+                    <span class="text-xs font-bold text-stone-500">每小時天氣預報</span>
+                </div>
+                <div class="flex overflow-x-auto no-scrollbar gap-2" id="hourly-weather-container">
+                    <!-- JS 生成 -->
+                </div>
+            </div>
+
+            <div id="timeline-container" class="space-y-4 pb-10"></div>
+        </div>
+
+        <!-- Tab 2: 資訊 -->
+        <div id="view-info" class="view-section hidden pt-4 space-y-6 animate-fade-in">
+            <div class="bg-white rounded-[24px] p-6 zen-shadow">
+                <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500"><i data-lucide="plane-takeoff" class="w-4 h-4"></i></div>
+                    航班資訊
+                </h3>
+                <div class="space-y-6">
+                    <div class="relative pl-6 border-l-2 border-stone-100">
+                        <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-stone-200 border-2 border-white ring-1 ring-stone-100"></div>
+                        <p class="text-xs text-stone-400 mb-1 font-bold">去程 (12/27)</p>
+                        <div class="flex justify-between items-center mb-2 bg-stone-50 p-3 rounded-xl">
+                            <span class="text-xl font-bold text-stone-700">HKG</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-stone-300"></i>
+                            <span class="text-xl font-bold text-stone-700">TPE</span>
+                        </div>
+                        <p class="text-sm text-stone-500">08:00 抵達 (落機)</p>
+                    </div>
+                    <div class="relative pl-6 border-l-2 border-stone-100">
+                        <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-stone-200 border-2 border-white ring-1 ring-stone-100"></div>
+                        <p class="text-xs text-stone-400 mb-1 font-bold">回程 (12/31)</p>
+                        <div class="flex justify-between items-center mb-2 bg-stone-50 p-3 rounded-xl">
+                            <span class="text-xl font-bold text-stone-700">TPE</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-stone-300"></i>
+                            <span class="text-xl font-bold text-stone-700">HKG</span>
+                        </div>
+                        <p class="text-sm text-stone-500">22:00 回香港</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: 記帳 -->
+        <div id="view-budget" class="view-section hidden pt-4 space-y-6 animate-fade-in">
+            
+            <div class="bg-[#2D2A26] rounded-[24px] p-6 text-white zen-shadow relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
+                
+                <div class="flex justify-between items-start mb-4">
+                    <p class="text-stone-400 text-xs font-medium tracking-wide uppercase" id="budget-title">總消費 (ALL)</p>
+                    <button onclick="promptAddCompanion()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-[10px] flex items-center gap-1 backdrop-blur-sm transition-colors">
+                        <i data-lucide="user-plus" class="w-3 h-3"></i> 管理旅伴
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-lg text-stone-400 font-bold">NT$</span>
+                        <h2 class="text-5xl font-bold tracking-tighter font-mono" id="total-expense-twd">0</h2>
+                    </div>
+                    <p class="text-stone-400 text-sm mt-1 font-medium flex items-center gap-1">
+                        <span class="bg-white/10 px-2 py-0.5 rounded text-xs">約 HK$ <span id="total-expense-hkd" class="font-mono">0</span></span>
+                    </p>
+                </div>
+
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="member-filter-container"></div>
+            </div>
+            
+            <div class="bg-white p-5 rounded-[24px] zen-shadow space-y-5 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-stone-200 to-white"></div>
+                <h3 class="text-stone-800 font-bold text-lg flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="receipt" class="w-4 h-4"></i></div>
+                    記一筆
+                </h3>
+
+                <div class="bg-stone-50 rounded-2xl px-5 py-4 flex flex-col border border-transparent focus-within:border-[#433D3C] transition-all shadow-inner relative group">
+                    <label class="text-[10px] text-stone-400 font-bold mb-1 uppercase">金額 (TWD)</label>
+                    <div class="flex items-baseline">
+                        <span class="text-stone-400 text-2xl mr-2 font-bold">$</span>
+                        <input type="number" id="expense-amount" placeholder="0" class="flex-1 bg-transparent text-4xl focus:outline-none text-stone-800 font-mono font-bold placeholder-stone-200">
+                    </div>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 font-mono text-sm pointer-events-none group-focus-within:text-stone-400 transition-colors">
+                        ≈ HK$ <span id="input-hkd-preview">0</span>
+                    </div>
+                </div>
+
+                <div class="bg-stone-50 rounded-2xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-stone-200 transition-colors">
+                    <input type="text" id="expense-item" placeholder="消費項目 (例如: 晚餐、車費)" class="flex-1 bg-transparent text-base focus:outline-none text-stone-700 placeholder-stone-400 font-medium">
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 bg-stone-50 p-4 rounded-2xl">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="wallet" class="w-3 h-3"></i> 誰先付錢？</span>
+                        <select id="expense-payer" class="bg-white text-stone-700 text-sm font-bold px-3 py-1.5 rounded-lg border-none focus:ring-0 outline-none cursor-pointer shadow-sm"></select>
+                    </div>
+                    <div class="h-px bg-stone-200/50 w-full"></div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-stone-500 font-bold flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> 誰要分攤？</span>
+                            <button type="button" onclick="selectAllShares()" class="text-[10px] bg-blue-50 text-blue-500 font-bold px-2 py-1 rounded hover:bg-blue-100 transition-colors">全選</button>
+                        </div>
+                        <div id="share-buttons-container" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <button onclick="addExpense()" class="w-full bg-[#433D3C] text-white py-4 rounded-2xl flex items-center justify-center gap-2 tap-effect shadow-lg shadow-stone-200 font-bold text-lg active:scale-[0.98] transition-transform">
+                    <i data-lucide="plus" class="w-5 h-5"></i> 加入記帳
+                </button>
+            </div>
+
+            <div class="flex justify-between items-end px-2">
+                <h4 class="text-stone-400 text-xs font-bold tracking-widest uppercase">交易紀錄 (HISTORY)</h4>
+                <span class="text-[10px] text-stone-300" id="list-filter-status">顯示全部</span>
+            </div>
+
+            <div id="expense-list" class="space-y-3 pb-10 min-h-[100px]"></div>
+        </div>
+    </main>
+
+    <!-- 底部導航 -->
+    <div class="fixed bottom-6 left-6 right-6 z-30">
+        <nav class="bg-white/90 backdrop-blur-xl rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] p-2 border border-white/50">
+            <div class="flex justify-around items-center">
+                <button onclick="switchTab('schedule')" id="tab-schedule" class="active-tab flex items-center gap-2 px-4 py-3 tap-effect transition-all duration-300">
+                    <i data-lucide="map" class="w-5 h-5"></i><span class="text-xs font-bold">行程</span>
+                </button>
+                <button onclick="switchTab('info')" id="tab-info" class="inactive-tab flex items-center gap-2 px-4 py-3 tap-effect transition-all duration-300">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i><span class="text-xs font-bold hidden">資訊</span>
+                </button>
+                <button onclick="switchTab('budget')" id="tab-budget" class="inactive-tab flex items-center gap-2 px-4 py-3 tap-effect transition-all duration-300">
+                    <i data-lucide="wallet" class="w-5 h-5"></i><span class="text-xs font-bold hidden">記帳</span>
+                </button>
+            </div>
+        </nav>
     </div>
 
-    <!-- Modals (共用) -->
+    <!-- Modals (詳細, 編輯, 行程設定) -->
     <div id="detail-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-md rounded-[32px] p-6 shadow-2xl modal-enter relative max-h-[85vh] overflow-y-auto no-scrollbar">
             <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-6"></div>
@@ -239,14 +287,14 @@
                 <input type="hidden" id="edit-day-index"><input type="hidden" id="edit-item-index">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">開始時間</label><input type="time" id="edit-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center"></div>
-                    <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">結束時間</label><input type="time" id="edit-end-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center text-stone-500 placeholder-stone-300"></div>
+                    <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">結束時間 (選填)</label><input type="time" id="edit-end-time" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center text-stone-500 placeholder-stone-300"></div>
                 </div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">類型</label><select id="edit-type" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm appearance-none"><option value="sight">📷 景點</option><option value="food">🍜 美食</option><option value="shop">🛍️ 購物</option><option value="transport">🚌 交通</option><option value="stay">🛏️ 住宿</option></select></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">標題</label><input type="text" id="edit-title" required class="w-full bg-white rounded-2xl p-4 text-sm font-bold border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="行程名稱"></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">地點</label><div class="relative"><i data-lucide="map-pin" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400"></i><input type="text" id="edit-location" class="w-full bg-white rounded-2xl p-4 pl-10 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="輸入地點關鍵字"></div></div>
-                <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">標籤</label><input type="text" id="edit-tags" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="例如: 必吃, 推薦"></div>
+                <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">標籤 (逗號分隔)</label><input type="text" id="edit-tags" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="例如: 必吃, 推薦"></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">簡短備註</label><input type="text" id="edit-note" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="顯示在卡片上的短句"></div>
-                <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">詳細介紹</label><textarea id="edit-description" rows="4" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm resize-none" placeholder="詳細攻略..."></textarea></div>
+                <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">詳細介紹 (同步顯示)</label><textarea id="edit-description" rows="4" class="w-full bg-white rounded-2xl p-4 text-sm font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm resize-none" placeholder="這裡輸入的內容會同步到詳細頁面..."></textarea></div>
                 <div class="pt-4"><button type="submit" class="w-full py-4 rounded-2xl bg-[#433D3C] text-[#FEFDF5] font-bold shadow-lg shadow-stone-300 tap-effect">儲存變更</button></div>
             </form>
         </div>
@@ -264,12 +312,12 @@
         </div>
     </div>
 
+    <!-- Firebase Integration -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        // Firebase Config (使用您提供的)
         const firebaseConfig = {
           apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw",
           authDomain: "mytaiwantrip-603c6.firebaseapp.com",
@@ -279,150 +327,158 @@
           appId: "1:1063667328708:web:d2ae7acd304e589b790b91"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const COLLECTION_NAME = 'travel_app_v2'; // 根集合名稱
-
-        // --- Global Variables & State ---
-        window.currentTripId = null;
-        window.allTrips = [];
-        window.scheduleData = [];
-        window.expenses = [];
-        window.companions = ["我"];
+        let app, auth, db;
         
-        // --- Cloud Functions ---
-        window.loadTripList = async () => {
-            if (!auth.currentUser) await signInAnonymously(auth);
-            
-            const metaRef = doc(db, COLLECTION_NAME, 'global_metadata');
-            
-            onSnapshot(metaRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    window.allTrips = docSnap.data().trips || [];
-                } else {
-                    // 初始化：如果沒有資料，建立預設的台灣旅程
-                    const defaultTrip = { id: 'default_taiwan', name: '台灣五日遊', date: '2025-11-27', days: 5 };
-                    window.allTrips = [defaultTrip];
-                    setDoc(metaRef, { trips: window.allTrips });
-                    
-                    // 同時寫入預設行程資料
-                    window.saveTripData('default_taiwan', 'schedule', window.defaultScheduleData);
-                    window.saveTripData('default_taiwan', 'expenses', []);
-                    window.saveTripData('default_taiwan', 'companions', ["我"]);
-                }
-                window.renderTripList();
-            });
-        };
+        if (Object.keys(firebaseConfig).length === 0) {
+            console.warn("Firebase config is missing!");
+            document.getElementById('status-text').innerText = "No Cloud";
+            document.getElementById('status-dot').classList.replace('bg-green-400', 'bg-gray-400');
+            document.getElementById('sync-indicator').style.display = 'none';
+        } else {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        }
 
-        window.selectTrip = (tripId) => {
-            window.currentTripId = tripId;
-            
-            // 切換畫面
-            document.getElementById('view-home').classList.add('hidden');
-            document.getElementById('view-app').classList.remove('hidden');
-            
-            // 更新標題
-            const trip = window.allTrips.find(t => t.id === tripId);
-            if(trip) document.getElementById('header-trip-title').innerText = trip.name;
+        const appId = 'my-taiwan-trip';
 
-            // 載入該旅程的詳細資料
-            window.loadTripDetails(tripId);
-        };
-
-        window.loadTripDetails = (tripId) => {
-            // 監聽 Schedule
-            onSnapshot(doc(db, COLLECTION_NAME, `trip_${tripId}_schedule`), (docSnap) => {
-                if (docSnap.exists()) {
-                    window.scheduleData = docSnap.data().items;
-                    window.currentDayIndex = 0;
-                    window.renderDaySelector();
-                    window.renderTimeline(0);
-                } else {
-                    window.scheduleData = []; // 空白旅程
-                    window.renderDaySelector();
-                    window.renderTimeline(0);
-                }
-            });
-
-            // 監聽 Expenses
-            onSnapshot(doc(db, COLLECTION_NAME, `trip_${tripId}_expenses`), (docSnap) => {
-                window.expenses = docSnap.exists() ? docSnap.data().items : [];
-                window.renderExpenses();
-            });
-
-            // 監聽 Companions
-            onSnapshot(doc(db, COLLECTION_NAME, `trip_${tripId}_companions`), (docSnap) => {
-                window.companions = docSnap.exists() ? docSnap.data().items : ["我"];
-                window.updatePayerSelect();
-                window.renderShareButtons();
-                window.renderFilter();
-            });
-        };
-
-        window.saveTripData = async (tripId, type, data) => {
-            const indicator = document.getElementById('sync-indicator');
-            indicator.classList.add('show');
+        window.saveToFirestore = async (type, data) => {
+            if (!auth || !auth.currentUser) return;
             try {
-                await setDoc(doc(db, COLLECTION_NAME, `trip_${tripId}_${type}`), { items: data });
-            } catch(e) { console.error(e); }
-            setTimeout(() => indicator.classList.remove('show'), 800);
+                const indicator = document.getElementById('sync-indicator');
+                indicator.classList.add('show');
+                const docRef = doc(db, 'trips', appId, 'data', type);
+                await setDoc(docRef, { items: data });
+                setTimeout(() => indicator.classList.remove('show'), 800);
+            } catch (e) { console.error("Sync error:", e); }
         };
 
-        // Wrapper for existing save functions to use currentTripId
-        window.saveCurrentSchedule = () => window.saveTripData(window.currentTripId, 'schedule', window.scheduleData);
-        window.saveCurrentExpenses = () => window.saveTripData(window.currentTripId, 'expenses', window.expenses);
-        window.saveCurrentCompanions = () => window.saveTripData(window.currentTripId, 'companions', window.companions);
-        
-        // Trip Management
-        window.createNewTrip = async () => {
-            const name = prompt("請輸入新旅程名稱 (例如: 東京賞櫻):");
-            if(!name) return;
+        async function initFirebase() {
+            if (!auth) return;
             
-            const newId = 'trip_' + Date.now();
-            const newTrip = { id: newId, name: name, date: new Date().toISOString().split('T')[0], days: 3 };
-            
-            // 更新列表
-            const newTripList = [...window.allTrips, newTrip];
-            await setDoc(doc(db, COLLECTION_NAME, 'global_metadata'), { trips: newTripList });
-            
-            // 初始化空資料
-            const initialSchedule = Array(3).fill().map((_, i) => ({ 
-                date: "", month: "", day: `Day ${i+1}`, items: [] 
-            }));
-            
-            await window.saveTripData(newId, 'schedule', initialSchedule);
-            await window.saveTripData(newId, 'expenses', []);
-            await window.saveTripData(newId, 'companions', ["我"]);
-        };
+            try {
+                await signInAnonymously(auth);
+                
+                const scheduleRef = doc(db, 'trips', appId, 'data', 'schedule');
+                const expenseRef = doc(db, 'trips', appId, 'data', 'expenses');
+                const companionRef = doc(db, 'trips', appId, 'data', 'companions');
 
-        window.deleteTrip = async (e, tripId) => {
-            e.stopPropagation();
-            if(!confirm("確定要刪除這個旅程嗎？所有資料將無法復原。")) return;
-            
-            const newTripList = window.allTrips.filter(t => t.id !== tripId);
-            await setDoc(doc(db, COLLECTION_NAME, 'global_metadata'), { trips: newTripList });
-        };
+                document.getElementById('status-text').innerText = "Synced";
+                document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-green-400');
 
-        // Start
-        window.loadTripList();
+                onSnapshot(scheduleRef, (doc) => {
+                    if (doc.exists()) {
+                        window.scheduleData = doc.data().items;
+                        window.renderDaySelector();
+                        window.renderTimeline(window.currentDayIndex);
+                    } else {
+                        // Initial Load: Save the updated default schedule to Firestore
+                        window.saveToFirestore('schedule', window.defaultScheduleData);
+                    }
+                });
+
+                onSnapshot(expenseRef, (doc) => {
+                    if (doc.exists()) {
+                        window.expenses = doc.data().items;
+                        window.renderExpenses(); 
+                    } else {
+                        window.saveToFirestore('expenses', []);
+                    }
+                });
+
+                onSnapshot(companionRef, (doc) => {
+                    if (doc.exists()) {
+                        window.companions = doc.data().items;
+                        window.updatePayerSelect();
+                        window.renderShareButtons();
+                        window.renderFilter();
+                    } else {
+                        window.saveToFirestore('companions', ["我"]);
+                    }
+                });
+
+            } catch (e) { 
+                console.error("Auth/Sync error:", e); 
+                document.getElementById('status-text').innerText = "Error";
+                document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-red-400');
+            }
+        }
+
+        initFirebase();
     </script>
 
     <script>
-        // --- UI Logic & Helpers ---
+        // --- 資料與參數 ---
         const EXCHANGE_RATE = 0.24;
+        // Updated Default Data with 12/27 Start Date and Detailed Info
         window.defaultScheduleData = [
-            { date: "27", month: "11", day: "Day 1", items: [{ time: "07:00", endTime: "08:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "歡迎來到台灣！", description: "記得先去領取事先預訂的 WiFi 機或 SIM 卡。" }] },
-            { date: "28", month: "11", day: "Day 2", items: [] }, { date: "29", month: "11", day: "Day 3", items: [] }, { date: "30", month: "11", day: "Day 4", items: [] }, { date: "31", month: "11", day: "Day 5", items: [] }
+            { 
+                date: "27", month: "12", day: "Day 1", 
+                items: [
+                    { time: "08:00", endTime: "10:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "購買悠遊卡/SIM卡", description: "機場捷運直達車約35-40分鐘可抵達台北車站。記得在機場先換好台幣，或使用ATM提款。" },
+                    { time: "11:00", endTime: "12:00", title: "民宿擺行李", type: "stay", location: "台北", note: "寄放行李", description: "先將行李寄放，輕裝上陣開始行程。" },
+                    { time: "13:00", endTime: "14:30", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃滷味"], note: "40年老店", description: "西門町老字號，滷味非常入味，必點滷蘿蔔、大豆干和意麵。滷汁帶點甜味，非常開胃。" },
+                    { time: "15:00", endTime: "16:30", title: "西門町", type: "sight", location: "西門町", tags: ["逛街"], note: "年輕人集散地", description: "台北潮流中心，必逛唐吉訶德、萬年大樓。推薦小吃：阿宗麵線、天天利美食坊。" },
+                    { time: "17:00", endTime: "18:30", title: "妳有咖啡 neo cafe", type: "food", location: "妳有咖啡 neo cafe", tags: ["咖啡", "Pizza"], note: "隱藏版咖啡廳", description: "位於二樓的復古風咖啡廳，環境舒適。推薦嘗試他們的「大人味焦糖布丁」和特色口味Pizza。" },
+                    { time: "19:00", endTime: "20:30", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃鴨血", "需訂位"], note: "台北最難訂", description: "復古台式裝潢，鴨血口感像果凍一樣滑嫩！記得點油條吸滿湯汁。" },
+                    { time: "21:00", endTime: "22:30", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["在地美食"], note: "CP值高", description: "雖無捷運直達但深受在地人喜愛。推薦：山內雞肉、臭老闆現蒸臭豆腐、八棟圓仔湯。" }
+                ] 
+            },
+            { 
+                date: "28", month: "12", day: "Day 2", 
+                items: [
+                    { time: "09:00", endTime: "10:00", title: "早餐", type: "food", location: "台北", note: "附近早餐店", description: "找間傳統豆漿店或蛋餅店開啟一天。" },
+                    { time: "12:00", endTime: "15:30", title: "九份十份", type: "sight", location: "九份老街", tags: ["山城", "燈籠"], note: "神隱少女場景", description: "建議先去十分瀑布和放天燈，傍晚再到九份老街看夜景。必吃：阿柑姨芋圓、阿蘭草仔粿。" },
+                    { time: "16:00", endTime: "17:30", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪", "煤礦"], note: "CNN推薦", description: "貓奴天堂，請勿對貓咪開閃光燈。也可參觀願景館了解煤礦歷史。" },
+                    { time: "19:00", endTime: "20:30", title: "大股熟成燒肉", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["厚切牛舌"], note: "清酒販賣機", description: "全程專人代烤，必玩店內的清酒投幣機，厚切牛舌口感極佳。" },
+                    { time: "22:00", endTime: "23:30", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["米其林推薦"], note: "路寬好逛", description: "動線單純，美食集中。必吃：劉芋仔蛋黃芋餅(必排)、圓環邊蚵仔煎、豬肝榮仔。" }
+                ] 
+            },
+            { 
+                date: "29", month: "12", day: "Day 3", 
+                items: [
+                    { time: "11:00", endTime: "12:30", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["絲瓜湯包"], note: "平價鼎泰豐", description: "必點絲瓜蝦仁湯包，清爽鮮甜。羅勒鮮蚵湯包也很有特色，流沙包當甜點很棒。" },
+                    { time: "14:00", endTime: "15:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C", "動漫"], note: "科技商場", description: "各樓層主題鮮明，動漫迷與3C控必逛。旁邊就是光華商場。" },
+                    { time: "15:00", endTime: "17:00", title: "華山1914", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽", "拍照"], note: "文青聚集地", description: "舊酒廠改建，充滿文藝氣息，常有特色特展與市集，大草皮適合休息。" },
+                    { time: "17:00", endTime: "18:00", title: "帕米貝可", type: "shop", location: "帕米貝可", tags: ["伴手禮", "蝴蝶酥"], note: "千層酥脆", description: "非常有名的千層蝴蝶酥，酥脆不甜膩，適合買回香港送禮。" },
+                    { time: "19:00", endTime: "20:30", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單"], note: "高CP值", description: "食材新鮮，CP值很高的無菜單料理，需準時入席。" },
+                    { time: "21:00", endTime: "22:30", title: "饒河夜市", type: "food", location: "饒河街觀光夜市", tags: ["米其林必比登"], note: "藥燉排骨", description: "入口處的「福州世祖胡椒餅」必排，陳董藥燉排骨冬天吃最暖胃。" }
+                ] 
+            },
+            { 
+                date: "30", month: "12", day: "Day 4", 
+                items: [
+                    { time: "12:00", endTime: "13:30", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["百貨"], note: "永和在地", description: "永和在地的百貨公司，適合悠閒逛街或用餐。" },
+                    { time: "14:00", endTime: "15:30", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["在地夜市"], note: "路寬好逛", description: "雖然是夜市，下午也有不少店家。推薦：郭記麻辣臭豆腐、永美雪花冰。" },
+                    { time: "16:00", endTime: "17:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["義式冰淇淋"], note: "天然濃郁", description: "口味非常道地，推薦開心果口味，水果系列也很清爽。" },
+                    { time: "19:00", endTime: "20:30", title: "金月日本鍋", type: "food", location: "金月日本鍋料理擔當", tags: ["清酒湯底"], note: "頂級鍋物", description: "以清酒入湯是一大特色，專人桌邊服務，煮海鮮和和牛都非常鮮甜。" },
+                    { time: "21:00", endTime: "22:30", title: "臨江街夜市", type: "food", location: "臨江街觀光夜市", tags: ["通化夜市"], note: "市區方便", description: "推薦：御品元冰火湯圓(必吃)、紅花麻辣鹽水雞、梁記滷味。" }
+                ] 
+            },
+            { 
+                date: "31", month: "12", day: "Day 5", 
+                items: [
+                    { time: "12:00", endTime: "12:30", title: "Check Out", type: "stay", location: "台北", note: "檢查行李", description: "最後一天，確認東西都帶齊了嗎？" },
+                    { time: "14:00", endTime: "17:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet"], note: "最後衝刺", description: "位於桃園高鐵旁，美式露天Outlet，各大國際精品折扣多，回港前最後衝刺。" },
+                    { time: "19:00", endTime: "20:00", title: "晚餐", type: "food", location: "桃園機場/高鐵站", note: "簡單用餐", description: "在機場或高鐵站附近簡單用餐，準備登機。" },
+                    { time: "22:00", endTime: "23:00", title: "回香港", type: "transport", location: "桃園機場", note: "提早報到", description: "建議提早 2.5 小時抵達機場辦理登機與退稅。" }
+                ] 
+            }
         ];
-        
-        // Variables
+
+        // Global State
+        window.scheduleData = JSON.parse(JSON.stringify(window.defaultScheduleData));
         window.currentDayIndex = 0;
+        window.expenses = [];
+        window.companions = ["我"];
         window.currentFilter = 'ALL';
 
         function init() {
             lucide.createIcons();
             generateHourlyWeather();
+            renderDaySelector();
+            renderTimeline(0); 
+            renderExpenses();
             
             document.getElementById('expense-amount').addEventListener('input', function(e) {
                 const val = parseInt(e.target.value) || 0;
@@ -430,57 +486,25 @@
             });
         }
 
-        // Trip List UI
-        window.renderTripList = function() {
-            const container = document.getElementById('trip-list-container');
-            if(window.allTrips.length === 0) {
-                container.innerHTML = '<p class="text-center text-stone-300 mt-10">還沒有旅程，按右上角新增一個吧！</p>';
-                return;
-            }
-            
-            container.innerHTML = window.allTrips.map(trip => `
-                <div onclick="selectTrip('${trip.id}')" class="bg-white rounded-[24px] p-5 zen-shadow relative overflow-hidden card-clickable group border border-white">
-                    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-stone-100 to-transparent rounded-bl-full opacity-50"></div>
-                    <div class="relative z-10">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-bold text-stone-400 tracking-widest uppercase">TRIP</span>
-                            <button onclick="deleteTrip(event, '${trip.id}')" class="text-stone-300 hover:text-red-400 p-1 -mr-2 -mt-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                        <h2 class="text-2xl font-bold text-[#433D3C] mb-1">${trip.name}</h2>
-                        <div class="flex items-center gap-2 text-stone-500 text-xs font-bold">
-                            <i data-lucide="calendar" class="w-3 h-3"></i>
-                            <span>${trip.date || '未設定日期'}</span>
-                            <span class="w-1 h-1 rounded-full bg-stone-300"></span>
-                            <span>${trip.days || 3} Days</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        };
-
-        window.backToHome = function() {
-            document.getElementById('view-app').classList.add('hidden');
-            document.getElementById('view-home').classList.remove('hidden');
-            window.currentTripId = null;
-        };
-
-        // Schedule UI
+        // Sync Wrappers
+        function saveSchedule() { window.saveToFirestore('schedule', window.scheduleData); }
+        
+        // --- Core Logic ---
         window.renderDaySelector = function() { 
             const c = document.getElementById('day-selector'); 
-            c.innerHTML = window.scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===window.currentDayIndex?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month ? d.month+'/' : ''}${d.date || '?'}</span></button>`).join(''); 
+            c.innerHTML = window.scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===window.currentDayIndex?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month}/${d.date}</span></button>`).join(''); 
         }
         
         window.selectDay = function(i) { 
             window.currentDayIndex = i; 
-            window.renderDaySelector(); // re-render for active style
+            document.querySelectorAll('.day-btn').forEach((b, idx) => { b.className = `day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${idx===i?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200 transform scale-105':'bg-white text-stone-300'}`; }); 
             window.renderTimeline(i);
             generateHourlyWeather(); 
         }
         
         window.renderTimeline = function(i) { 
             const c = document.getElementById('timeline-container'); 
-            if (!window.scheduleData[i]) { c.innerHTML = ''; return; }
+            if (!window.scheduleData[i]) return;
             const d = window.scheduleData[i];
             d.items.sort((a,b)=>a.time.localeCompare(b.time));
             
@@ -498,7 +522,6 @@
             lucide.createIcons();
         }
 
-        // Expense UI
         window.setFilter = function(name) { window.currentFilter = name; window.renderExpenses(); }
         window.renderFilter = function() { const c = document.getElementById('member-filter-container'); let h = `<button onclick="setFilter('ALL')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === 'ALL' ? 'filter-btn-active' : 'filter-btn-inactive'}">全體</button>`; window.companions.forEach(n => { h += `<button onclick="setFilter('${n}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === n ? 'filter-btn-active' : 'filter-btn-inactive'}">${n}</button>`; }); c.innerHTML = h; }
         
@@ -532,16 +555,16 @@
             window.renderFilter(); lucide.createIcons();
         }
 
-        window.addExpense = function() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount) { alert("請輸入項目和金額"); return; } if(sharedBy.length === 0) { alert("請至少選擇一位分攤對象"); return; } window.expenses.push({ item, amount, payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; window.saveCurrentExpenses(); }
-        window.deleteExpense = function(index) { if(confirm('確定刪除這筆紀錄？')) { window.expenses.splice(index, 1); window.saveCurrentExpenses(); } }
+        window.addExpense = function() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount) { alert("請輸入項目和金額"); return; } if(sharedBy.length === 0) { alert("請至少選擇一位分攤對象"); return; } window.expenses.push({ item, amount, payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; window.saveToFirestore('expenses', window.expenses); }
+        window.deleteExpense = function(index) { if(confirm('確定刪除這筆紀錄？')) { window.expenses.splice(index, 1); window.saveToFirestore('expenses', window.expenses); } }
         
-        window.promptAddCompanion = function() { const name = prompt("請輸入旅伴名字："); if (name && name.trim() !== "") { if (!window.companions.includes(name.trim())) { window.companions.push(name.trim()); window.saveCurrentCompanions(); } else { alert("已經在名單內囉！"); } } }
+        window.promptAddCompanion = function() { const name = prompt("請輸入旅伴名字："); if (name && name.trim() !== "") { if (!window.companions.includes(name.trim())) { window.companions.push(name.trim()); window.saveToFirestore('companions', window.companions); } else { alert("已經在名單內囉！"); } } }
         window.updatePayerSelect = function() { document.getElementById('expense-payer').innerHTML = window.companions.map(c => `<option value="${c}">${c}</option>`).join(''); }
         window.renderShareButtons = function() { document.getElementById('share-buttons-container').innerHTML = window.companions.map(c => `<button type="button" class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors" data-name="${c}" onclick="toggleShare(this)">${c}</button>`).join(''); }
         window.toggleShare = function(btn) { if (btn.classList.contains('share-btn-selected')) { btn.classList.remove('share-btn-selected'); btn.classList.add('share-btn-unselected'); } else { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); } }
         window.selectAllShares = function() { document.querySelectorAll('.share-toggle-btn').forEach(btn => { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); }); }
 
-        // Edit/Detail Modals
+        // Modals
         const detailModal = document.getElementById('detail-modal'); const detailContent = document.getElementById('detail-content');
         window.openDetailModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin'; let timeStr = item.time; if (item.endTime) timeStr += ` - ${item.endTime}`; 
             const descriptionText = item.description ? item.description.split('\n').map(l=>`<p class="mb-2">${l}</p>`).join('') : '<p class="text-stone-400 italic">暫無詳細介紹...</p>';
@@ -555,22 +578,13 @@
         window.openAddModal = function(dayIndex) { document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = -1; modalTitle.innerText = "新增行程"; document.getElementById('edit-time').value = "12:00"; document.getElementById('edit-end-time').value = ""; document.getElementById('edit-type').value = "sight"; document.getElementById('edit-title').value = ""; document.getElementById('edit-location').value = ""; document.getElementById('edit-tags').value = ""; document.getElementById('edit-note').value = ""; document.getElementById('edit-description').value = ""; editModal.classList.remove('hidden'); }
         window.openEditModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = itemIndex; modalTitle.innerText = "編輯行程"; document.getElementById('edit-time').value = item.time; document.getElementById('edit-end-time').value = item.endTime || ""; document.getElementById('edit-type').value = item.type; document.getElementById('edit-title').value = item.title; document.getElementById('edit-location').value = item.location; document.getElementById('edit-tags').value = item.tags?item.tags.join(', '):''; document.getElementById('edit-note').value = item.note||''; document.getElementById('edit-description').value = item.description||''; editModal.classList.remove('hidden'); }
         window.closeEditModal = function() { editModal.classList.add('hidden'); }
-        window.saveScheduleItem = function(e) { e.preventDefault(); const d = parseInt(document.getElementById('edit-day-index').value); const i = parseInt(document.getElementById('edit-item-index').value); const item = { time: document.getElementById('edit-time').value, endTime: document.getElementById('edit-end-time').value, type: document.getElementById('edit-type').value, title: document.getElementById('edit-title').value, location: document.getElementById('edit-location').value, tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(t=>t), note: document.getElementById('edit-note').value, description: document.getElementById('edit-description').value }; if (i === -1) window.scheduleData[d].items.push(item); else window.scheduleData[d].items[i] = item; window.saveCurrentSchedule(); window.renderTimeline(d); closeEditModal(); }
-        window.deleteScheduleItem = function(d, i) { if(confirm("確定刪除？")) { window.scheduleData[d].items.splice(i, 1); window.saveCurrentSchedule(); window.renderTimeline(d); } }
+        window.saveScheduleItem = function(e) { e.preventDefault(); const d = parseInt(document.getElementById('edit-day-index').value); const i = parseInt(document.getElementById('edit-item-index').value); const item = { time: document.getElementById('edit-time').value, endTime: document.getElementById('edit-end-time').value, type: document.getElementById('edit-type').value, title: document.getElementById('edit-title').value, location: document.getElementById('edit-location').value, tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(t=>t), note: document.getElementById('edit-note').value, description: document.getElementById('edit-description').value }; if (i === -1) window.scheduleData[d].items.push(item); else window.scheduleData[d].items[i] = item; window.saveToFirestore('schedule', window.scheduleData); window.renderTimeline(d); closeEditModal(); }
+        window.deleteScheduleItem = function(d, i) { if(confirm("確定刪除？")) { window.scheduleData[d].items.splice(i, 1); window.saveToFirestore('schedule', window.scheduleData); window.renderTimeline(d); } }
         editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
 
-        // Date & Days
+        // Date & Days Logic
         const dateModal = document.getElementById('date-modal');
-        const tripDaysInput = document.getElementById('trip-days-input');
-        window.openDateModal = function() { 
-            // Try to find start date from first day of current trip or default to today
-            // Since we store full date string in metadata, we should ideally use that.
-            // But here we reconstruct from scheduleData.
-            const today = new Date().toISOString().split('T')[0]; 
-            document.getElementById('start-date-input').value = today; 
-            document.getElementById('trip-days-input').value = window.scheduleData.length; 
-            dateModal.classList.remove('hidden'); 
-        }
+        window.openDateModal = function() { const today = new Date().toISOString().split('T')[0]; document.getElementById('start-date-input').value = today; document.getElementById('trip-days-input').value = window.scheduleData.length; dateModal.classList.remove('hidden'); }
         window.closeDateModal = function() { dateModal.classList.add('hidden'); }
         window.changeDays = function(delta) { let v = parseInt(document.getElementById('trip-days-input').value) + delta; if(v < 1) v = 1; document.getElementById('trip-days-input').value = v; }
         window.updateTravelDates = function() {
@@ -580,23 +594,21 @@
             if(days > window.scheduleData.length) { for(let i=window.scheduleData.length; i<days; i++) window.scheduleData.push({ date:"", month:"", day:`Day ${i+1}`, items:[] }); }
             else if(days < window.scheduleData.length) { if(!confirm(`確定減少天數？`)) return; window.scheduleData.length = days; }
             window.scheduleData.forEach((d, i) => { const dt = new Date(start); dt.setDate(start.getDate()+i); d.date=dt.getDate(); d.month=dt.getMonth()+1; d.day=`Day ${i+1}`; });
-            window.saveCurrentSchedule(); 
-            
-            // Update metadata in Trip List
-            const currentTrip = window.allTrips.find(t => t.id === window.currentTripId);
-            if(currentTrip) {
-                currentTrip.date = dStr;
-                currentTrip.days = days;
-                window.saveToFirestore('global_metadata', { trips: window.allTrips }); // Save metadata
-            }
-
-            window.renderDaySelector(); window.renderTimeline(0); closeDateModal();
+            window.saveToFirestore('schedule', window.scheduleData); window.renderDaySelector(); window.renderTimeline(0); closeDateModal();
         }
 
-        window.resetToDefault = function() { if(confirm("清除此旅程資料？")) { window.saveCurrentSchedule(window.defaultScheduleData); } }
-        window.switchTab = function(tabId) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); ['schedule', 'info', 'budget'].forEach(id => { const btn = document.getElementById(`tab-${id}`); const span = btn.querySelector('span'); if(id === tabId) { btn.className = "active-tab flex items-center gap-2 px-5 py-3 tap-effect transition-all duration-300"; span.classList.remove('hidden'); } else { btn.className = "inactive-tab flex items-center gap-2 px-3 py-3 tap-effect transition-all duration-300"; span.classList.add('hidden'); } }); }
-
+        // Util
         function generateHourlyWeather() { const ws = [{i:'sun',t:22},{i:'cloud-sun',t:24},{i:'cloud',t:23},{i:'cloud-rain',t:20}]; let h=''; for(let i=6;i<=23;i++){ const m=ws[Math.floor(Math.random()*ws.length)]; h+=`<div class="weather-scroll-item flex flex-col items-center justify-center bg-stone-50 rounded-xl py-2 px-1 snap-start"><span class="text-[10px] text-stone-400 font-mono mb-1">${i}:00</span><i data-lucide="${m.i}" class="w-5 h-5 text-stone-600 mb-1"></i><span class="text-xs font-bold text-stone-800">${m.t}°</span></div>`; } document.getElementById('hourly-weather-container').innerHTML=h; }
+        window.resetToDefault = function() { 
+            if(confirm("確定要恢復預設行程嗎？您目前的修改將會消失。")) { 
+                // 重要：將當前資料重置為預設資料，並立即同步到雲端
+                window.scheduleData = JSON.parse(JSON.stringify(window.defaultScheduleData));
+                window.saveToFirestore('schedule', window.scheduleData); 
+                window.renderDaySelector();
+                window.renderTimeline(0);
+            } 
+        }
+        window.switchTab = function(tabId) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); ['schedule', 'info', 'budget'].forEach(id => { const btn = document.getElementById(`tab-${id}`); const span = btn.querySelector('span'); if(id === tabId) { btn.className = "active-tab flex items-center gap-2 px-5 py-3 tap-effect transition-all duration-300"; span.classList.remove('hidden'); } else { btn.className = "inactive-tab flex items-center gap-2 px-3 py-3 tap-effect transition-all duration-300"; span.classList.add('hidden'); } }); }
 
         init();
         
