@@ -390,7 +390,7 @@
                 });
             }
 
-            // 2. 計算金額
+            // 2. 計算金額 (總額計算)
             if (currentFilter === 'ALL') {
                 // 全體模式：加總所有消費金額
                 totalTWD = expenses.reduce((sum, ex) => sum + parseInt(ex.amount), 0);
@@ -407,8 +407,19 @@
                 // 為了在過濾後能正確刪除原始資料，需要找到原始 index
                 const originalIndex = expenses.indexOf(ex);
                 
-                const amountTWD = parseInt(ex.amount);
-                const amountHKD = Math.round(amountTWD * EXCHANGE_RATE);
+                const fullAmount = parseInt(ex.amount);
+                let displayAmount = fullAmount;
+                let displayLabel = "總額"; // 預設顯示標籤
+
+                // **重要修改：如果是個人模式，顯示分攤後的金額**
+                if (currentFilter !== 'ALL') {
+                    const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1;
+                    displayAmount = fullAmount / sharersCount;
+                    displayLabel = "應付";
+                }
+
+                const amountHKD = Math.round(displayAmount * EXCHANGE_RATE);
+                const amountTWD = Math.round(displayAmount);
                 const payer = ex.payer || "我";
                 const sharedBy = ex.sharedBy || ["我"];
                 const shareText = sharedBy.length === companions.length ? "全員" : sharedBy.join(",");
@@ -421,6 +432,7 @@
                                 <span class="text-[10px] text-stone-400">由 ${payer} 先付 • 分攤: ${shareText}</span>
                             </div>
                             <div class="text-right">
+                                <div class="text-[10px] text-stone-300 font-bold mb-0.5 text-right">${displayLabel}</div>
                                 <div class="font-mono font-bold text-stone-800 text-lg">NT$ ${amountTWD}</div>
                                 <div class="font-mono text-xs text-stone-400">≈ HK$ ${amountHKD}</div>
                             </div>
