@@ -2,274 +2,476 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>隨身記事</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>台灣之旅</title>
     
-    <!-- iOS 專屬 Meta Tags: 讓它在 iPhone 上看起來像原生 App -->
+    <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="隨身記事">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#FAFAFA">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 禁止選取文字，讓質感更像 App */
+        :root {
+            --bg-color: #FAFAFA;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --accent: #4B5563; /* 質感深灰 */
+            --highlight: #BE123C; /* 日式茜色 - 用於重點標籤 */
+        }
+
         body {
-            -webkit-touch-callout: none;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             -webkit-user-select: none;
             user-select: none;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f3f4f6;
-            /* 解決 iOS 底部安全區域問題 */
             padding-bottom: env(safe-area-inset-bottom);
         }
+
+        /* 日式標題字型 */
+        h1, h2, .date-font {
+            font-family: 'Shippori Mincho', serif;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 極簡卡片陰影 */
+        .zen-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .active-tab {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .active-tab::after {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 4px;
+            background: var(--text-main);
+            border-radius: 50%;
+            margin: 4px auto 0;
+        }
         
-        /* 允許輸入框選取文字 */
-        input, textarea {
-            -webkit-user-select: text;
-            user-select: text;
-        }
+        .inactive-tab { color: #CCCCCC; }
 
-        /* 隱藏捲軸但保留捲動功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        /* 按鈕點擊感 */
+        .tap-effect:active { opacity: 0.7; transform: scale(0.98); }
 
-        /* 點擊效果 */
-        .active-scale:active {
-            transform: scale(0.95);
-            transition: transform 0.1s;
-        }
-
-        .note-item {
-            transition: all 0.3s ease;
-        }
+        /* 標籤配色 */
+        .tag-must-eat { background: #FFF1F2; color: #BE123C; border: 1px solid #FFE4E6; }
+        .tag-nav { background: #F3F4F6; color: #374151; }
+        .tag-tips { background: #ECFEFF; color: #0E7490; border: 1px solid #CFFAFE; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden text-gray-800">
+<body class="h-screen flex flex-col overflow-hidden bg-[#FAFAFA]">
 
-    <!-- 頂部標題列 -->
-    <header class="bg-white shadow-sm z-10 pt-safe-top">
-        <div class="px-4 py-4 flex justify-between items-center">
+    <!-- 頂部資訊 -->
+    <header class="bg-[#FAFAFA]/95 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 border-b border-gray-100">
+        <div class="flex justify-between items-end">
             <div>
-                <h1 class="text-xl font-bold text-gray-900 tracking-wide">隨身記事</h1>
-                <p class="text-xs text-gray-500" id="date-display">載入中...</p>
+                <p class="text-xs text-gray-400 tracking-widest mb-1">TAIPEI TRIP</p>
+                <h1 class="text-2xl font-bold tracking-wide text-gray-800">台灣五日遊</h1>
             </div>
-            <button onclick="showInfo()" class="p-2 rounded-full hover:bg-gray-100 active-scale text-gray-600">
-                <i data-lucide="info" class="w-6 h-6"></i>
-            </button>
+            <div class="text-right">
+                <p class="text-xs text-gray-400 mb-1">目前天氣</p>
+                <div class="flex items-center gap-1 text-gray-700">
+                    <i data-lucide="cloud" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">22°C</span>
+                </div>
+            </div>
         </div>
     </header>
 
-    <!-- 主要內容區域 (可捲動) -->
-    <main class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24" id="notes-container">
-        <!-- 筆記將會動態插入這裡 -->
-        <div id="empty-state" class="hidden flex flex-col items-center justify-center h-full text-gray-400 mt-20">
-            <i data-lucide="notebook-pen" class="w-16 h-16 mb-4 opacity-50"></i>
-            <p>還沒有記事</p>
-            <p class="text-sm">點擊下方按鈕新增</p>
+    <!-- 主要內容區 -->
+    <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-24 relative px-4">
+        
+        <!-- Tab 1: 行程 -->
+        <div id="view-schedule" class="view-section pt-4 space-y-6 animate-fade-in">
+            
+            <!-- 日期選擇 (橫向捲動) -->
+            <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector">
+                <!-- JS 生成 -->
+            </div>
+
+            <!-- 時間軸容器 -->
+            <div id="timeline-container" class="space-y-4 pb-10">
+                <!-- JS 生成 -->
+            </div>
+        </div>
+
+        <!-- Tab 2: 資訊 (航班/住宿/緊急) -->
+        <div id="view-info" class="view-section hidden pt-6 space-y-6 animate-fade-in">
+            
+            <!-- 航班卡片 -->
+            <div class="bg-white rounded-xl p-6 zen-shadow">
+                <h3 class="font-serif text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="plane-takeoff" class="w-4 h-4"></i> 航班資訊
+                </h3>
+                <div class="space-y-6">
+                    <!-- 去程 -->
+                    <div class="relative pl-4 border-l-2 border-gray-100">
+                        <div class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-gray-300"></div>
+                        <p class="text-xs text-gray-400 mb-1">去程 11/27 (Day 1)</p>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xl font-bold font-serif">HKG</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300"></i>
+                            <span class="text-xl font-bold font-serif">TPE</span>
+                        </div>
+                        <p class="text-sm text-gray-600">07:00 抵達 (落機)</p>
+                    </div>
+                    <!-- 回程 -->
+                    <div class="relative pl-4 border-l-2 border-gray-100">
+                        <div class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-gray-300"></div>
+                        <p class="text-xs text-gray-400 mb-1">回程 11/31 (Day 5)</p>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xl font-bold font-serif">TPE</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300"></i>
+                            <span class="text-xl font-bold font-serif">HKG</span>
+                        </div>
+                        <p class="text-sm text-gray-600">22:00 回香港</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 住宿 -->
+            <div class="bg-white rounded-xl p-6 zen-shadow">
+                <h3 class="font-serif text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="bed-double" class="w-4 h-4"></i> 住宿資訊
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">民宿 (待填入名稱)</p>
+                                <p class="text-xs text-gray-400 mt-0.5">11/27 - 11/31</p>
+                            </div>
+                            <button class="text-xs bg-gray-100 px-3 py-1.5 rounded-full text-gray-600 tap-effect">
+                                導航
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded">
+                            <span class="font-bold">Check-in:</span> 15:00 <br>
+                            <span class="font-bold">Check-out:</span> 11:00
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 緊急聯絡 -->
+            <div class="bg-red-50 rounded-xl p-6 border border-red-100">
+                <h3 class="font-serif text-lg font-bold text-red-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="phone" class="w-4 h-4"></i> 緊急聯絡
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="tel:110" class="bg-white p-3 rounded-lg text-center tap-effect shadow-sm">
+                        <p class="text-xs text-red-400 mb-1">報案</p>
+                        <p class="text-lg font-bold text-red-600">110</p>
+                    </a>
+                    <a href="tel:119" class="bg-white p-3 rounded-lg text-center tap-effect shadow-sm">
+                        <p class="text-xs text-red-400 mb-1">救護車</p>
+                        <p class="text-lg font-bold text-red-600">119</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: 記帳 -->
+        <div id="view-budget" class="view-section hidden pt-6 space-y-4 animate-fade-in">
+            <div class="bg-gray-800 rounded-xl p-6 text-white zen-shadow">
+                <p class="text-gray-400 text-xs mb-1">總支出 (NTD)</p>
+                <h2 class="text-4xl font-serif font-bold tracking-wider" id="total-expense">0</h2>
+            </div>
+            
+            <form onsubmit="addExpense(event)" class="bg-white p-4 rounded-xl zen-shadow flex gap-2">
+                <input type="text" id="expense-item" placeholder="項目" class="flex-1 bg-gray-50 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300">
+                <input type="number" id="expense-amount" placeholder="$" class="w-20 bg-gray-50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300">
+                <button type="submit" class="bg-gray-800 text-white w-10 h-10 rounded-lg flex items-center justify-center tap-effect">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </form>
+
+            <div id="expense-list" class="space-y-2 pb-10">
+                <!-- JS 動態生成 -->
+            </div>
         </div>
     </main>
 
-    <!-- 底部輸入區域 -->
-    <div class="bg-white border-t border-gray-200 px-4 py-3 pb-6 fixed bottom-0 w-full z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <form id="add-form" class="flex gap-2 items-center" onsubmit="addNote(event)">
-            <input type="text" id="note-input" 
-                class="flex-1 bg-gray-100 text-gray-900 rounded-full px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
-                placeholder="寫下些什麼..." autocomplete="off">
-            <button type="submit" 
-                class="bg-blue-600 text-white p-3 rounded-full shadow-lg active-scale hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                <i data-lucide="plus" class="w-6 h-6"></i>
+    <!-- 底部導航 -->
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 pb-safe-bottom z-30">
+        <div class="flex justify-center items-center h-16 gap-12">
+            <button onclick="switchTab('schedule')" id="tab-schedule" class="active-tab flex flex-col items-center">
+                <span class="text-xs tracking-widest mt-1">行程</span>
             </button>
-        </form>
-    </div>
-
-    <!-- 資訊 Modal -->
-    <div id="info-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="info-content">
-            <h3 class="text-lg font-bold mb-2">如何安裝到手機？</h3>
-            <ul class="text-sm text-gray-600 space-y-3 mb-6 list-disc list-inside">
-                <li><strong>iOS (Safari):</strong><br>點擊下方「分享」圖示 <i data-lucide="share" class="inline w-4 h-4"></i> -> 選擇「加入主畫面」。</li>
-                <li><strong>Android (Chrome):</strong><br>點擊右上角選單 -> 選擇「加到主畫面」。</li>
-            </ul>
-            <button onclick="closeInfo()" class="w-full bg-gray-900 text-white py-3 rounded-xl font-medium active-scale">我知道了</button>
+            <button onclick="switchTab('info')" id="tab-info" class="inactive-tab flex flex-col items-center">
+                <span class="text-xs tracking-widest mt-1">資訊</span>
+            </button>
+            <button onclick="switchTab('budget')" id="tab-budget" class="inactive-tab flex flex-col items-center">
+                <span class="text-xs tracking-widest mt-1">記帳</span>
+            </button>
         </div>
-    </div>
-
-    <!-- 刪除確認 Modal -->
-    <div id="delete-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 class="text-lg font-bold mb-2 text-red-600">刪除記事？</h3>
-            <p class="text-gray-600 mb-6">這條記事將會被永久刪除。</p>
-            <div class="flex gap-3">
-                <button onclick="cancelDelete()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium active-scale">取消</button>
-                <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium active-scale shadow-md">刪除</button>
-            </div>
-        </div>
-    </div>
+    </nav>
 
     <script>
-        // 初始化圖示
-        lucide.createIcons();
+        // --- 核心資料: 您的台灣行程 ---
+        const scheduleData = [
+            {
+                date: "27",
+                month: "11",
+                day: "Day 1",
+                items: [
+                    { time: "07:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "歡迎來到台灣！" },
+                    { time: "11:00", title: "民宿放行李", type: "stay", location: "台北", note: "確認 Check-in 時間" },
+                    { time: "13:00", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃: 滷味", "必吃: 意麵", "必吃: 滷肉飯"] },
+                    { time: "15:00", title: "西門町", type: "sight", location: "西門町", tags: ["逛街", "街頭小吃"] },
+                    { time: "17:00", title: "妳有咖啡 neo café", type: "food", location: "妳有咖啡 neo cafe", tags: ["推薦: 大人味布丁", "推薦: Pizza"] },
+                    { time: "19:00", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃: 鴨血", "必吃: 豆腐", "需訂位"] },
+                    { time: "21:00", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["必吃: 水餃", "必吃: 臭豆腐"] }
+                ]
+            },
+            {
+                date: "28",
+                month: "11",
+                day: "Day 2",
+                items: [
+                    { time: "09:00", title: "早餐", type: "food", location: "台北", note: "附近找間傳統早餐店吧 (阜杭?)" },
+                    { time: "12:00", title: "九份 / 十分", type: "sight", location: "九份老街", tags: ["必吃: 芋圓", "放天燈", "瀑布"] },
+                    { time: "16:00", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪", "煤礦歷史"] },
+                    { time: "19:00", title: "大股熟成燒肉專門", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["必點: 超厚切牛舌", "清酒販賣機"] },
+                    { time: "21:00", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["必吃: 芋丸", "必吃: 蚵仔煎"] }
+                ]
+            },
+            {
+                date: "29",
+                month: "11",
+                day: "Day 3",
+                items: [
+                    { time: "11:00", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["必點: 絲瓜蝦仁湯包", "必點: 羅勒鮮蚵湯包"] },
+                    { time: "14:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C", "動漫"] },
+                    { time: "15:00", title: "華山1914文創園區", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽", "文青小店"] },
+                    { time: "17:00", title: "帕米貝可蝴蝶酥", type: "shop", location: "帕米貝可", tags: ["伴手禮: 蝴蝶酥"] },
+                    { time: "19:00", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單", "高CP值"] },
+                    { time: "21:00", title: "饒河街觀光夜市", type: "food", location: "饒河街觀光夜市", tags: ["必吃: 胡椒餅", "必吃: 藥燉排骨"] }
+                ]
+            },
+            {
+                date: "30",
+                month: "11",
+                day: "Day 4",
+                items: [
+                    { time: "12:00", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["逛街", "美食街"] },
+                    { time: "14:00", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["逛街"] },
+                    { time: "16:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["推薦: 開心果三重奏", "義式冰淇淋"] },
+                    { time: "19:00", title: "金月-日本鍋料理", type: "food", location: "金月日本鍋料理擔當", tags: ["必點: 清酒湯底", "A5和牛", "咖哩奶油卷"] },
+                    { time: "21:00", title: "臨江街(通化)夜市", type: "food", location: "臨江街觀光夜市", tags: ["必吃: 冰火湯圓", "必吃: 紅花香腸"] }
+                ]
+            },
+            {
+                date: "31",
+                month: "11",
+                day: "Day 5",
+                items: [
+                    { time: "12:00", title: "Check Out", type: "stay", location: "台北", note: "行李寄放?" },
+                    { time: "14:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet", "最後衝刺"] },
+                    { time: "19:00", title: "晚餐", type: "food", location: "桃園高鐵站", note: "機場捷運沿線" },
+                    { time: "22:00", title: "回香港", type: "transport", location: "台灣桃園國際機場", note: "平安回家" }
+                ]
+            }
+        ];
 
-        // 狀態管理
-        let notes = JSON.parse(localStorage.getItem('myNotes') || '[]');
-        let deleteId = null;
+        // --- 初始化 & 邏輯 ---
+        let currentDayIndex = 0;
+        let expenses = JSON.parse(localStorage.getItem('tw_trip_expenses') || '[]');
 
-        // DOM 元素
-        const container = document.getElementById('notes-container');
-        const input = document.getElementById('note-input');
-        const emptyState = document.getElementById('empty-state');
-        const dateDisplay = document.getElementById('date-display');
-        const deleteModal = document.getElementById('delete-modal');
-        const infoModal = document.getElementById('info-modal');
-        const infoContent = document.getElementById('info-content');
+        function init() {
+            lucide.createIcons();
+            renderDaySelector();
+            renderTimeline(0);
+            renderExpenses();
+        }
 
-        // 顯示日期
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        dateDisplay.textContent = new Date().toLocaleDateString('zh-TW', options);
+        // 渲染日期選單
+        function renderDaySelector() {
+            const container = document.getElementById('day-selector');
+            container.innerHTML = scheduleData.map((day, index) => `
+                <button onclick="selectDay(${index})" 
+                    class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-14 h-16 rounded-xl border transition-all ${index === 0 ? 'bg-gray-800 text-white border-gray-800 shadow-md' : 'bg-white text-gray-400 border-gray-200'}"
+                    id="day-btn-${index}">
+                    <span class="text-[10px] font-medium tracking-wide">${day.day}</span>
+                    <span class="text-lg font-serif font-bold">${day.date}</span>
+                </button>
+            `).join('');
+        }
 
-        // 渲染筆記
-        function renderNotes() {
-            // 清空除了 empty-state 以外的內容
-            const items = container.querySelectorAll('.note-item');
-            items.forEach(el => el.remove());
+        // 切換日期
+        function selectDay(index) {
+            currentDayIndex = index;
+            
+            // 更新按鈕樣式
+            document.querySelectorAll('.day-btn').forEach((btn, idx) => {
+                if (idx === index) {
+                    btn.className = "day-btn flex-shrink-0 flex flex-col items-center justify-center w-14 h-16 rounded-xl border transition-all bg-gray-800 text-white border-gray-800 shadow-md transform scale-105";
+                } else {
+                    btn.className = "day-btn flex-shrink-0 flex flex-col items-center justify-center w-14 h-16 rounded-xl border transition-all bg-white text-gray-400 border-gray-200";
+                }
+            });
 
-            if (notes.length === 0) {
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-            } else {
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('flex');
+            renderTimeline(index);
+        }
 
-                // 倒序顯示，最新的在最上面
-                [...notes].reverse().forEach(note => {
-                    const el = document.createElement('div');
-                    el.className = 'note-item bg-white p-4 rounded-2xl shadow-sm mb-3 border border-gray-100 flex justify-between items-start animate-[fadeIn_0.3s_ease-out]';
-                    el.style.animation = 'fadeIn 0.3s ease-out';
-                    
-                    // 時間格式化
-                    const date = new Date(note.timestamp);
-                    const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        // 渲染行程卡片
+        function renderTimeline(dayIndex) {
+            const container = document.getElementById('timeline-container');
+            const data = scheduleData[dayIndex];
+            
+            // 天氣模擬 (隨機)
+            const weathers = ['cloud-sun', 'sun', 'cloud-rain'];
+            const randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
 
-                    el.innerHTML = `
-                        <div class="flex-1 pr-3">
-                            <p class="text-gray-800 text-base leading-relaxed break-all">${escapeHtml(note.text)}</p>
-                            <p class="text-xs text-gray-400 mt-2">${timeStr}</p>
+            let html = `
+                <div class="flex items-center justify-between px-2 mb-2 animate-fade-in">
+                    <p class="text-sm text-gray-500 font-serif">11月${data.date}日 / ${data.day}</p>
+                    <i data-lucide="${randomWeather}" class="w-4 h-4 text-gray-400"></i>
+                </div>
+            `;
+
+            html += data.items.map(item => {
+                // 根據類型決定圖示
+                let icon = 'map-pin';
+                if(item.type === 'food') icon = 'utensils';
+                if(item.type === 'transport') icon = 'bus';
+                if(item.type === 'shop') icon = 'shopping-bag';
+                if(item.type === 'stay') icon = 'bed';
+
+                // 生成標籤
+                let tagsHtml = '';
+                if(item.tags) {
+                    tagsHtml = `<div class="flex flex-wrap gap-2 mt-3">` + 
+                    item.tags.map(tag => {
+                        let className = 'tag-tips'; // 預設
+                        if(tag.includes('必吃') || tag.includes('必點')) className = 'tag-must-eat';
+                        return `<span class="text-[10px] px-2 py-0.5 rounded ${className}">${tag}</span>`;
+                    }).join('') + `</div>`;
+                }
+
+                return `
+                <div class="bg-white rounded-xl p-5 zen-shadow relative overflow-hidden animate-slide-up">
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center pt-1 w-10">
+                            <span class="text-xs font-medium text-gray-400 mb-1">${item.time}</span>
+                            <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
+                                <i data-lucide="${icon}" class="w-4 h-4"></i>
+                            </div>
+                            <div class="h-full w-[1px] bg-gray-100 my-2"></div>
                         </div>
-                        <button onclick="askDelete(${note.id})" class="text-gray-400 hover:text-red-500 p-2 -mr-2 active-scale transition-colors">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    `;
-                    container.appendChild(el);
-                });
-                lucide.createIcons();
-            }
+                        <div class="flex-1 pb-2">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-gray-800 text-lg leading-tight">${item.title}</h3>
+                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" 
+                                    class="text-xs flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors tap-effect">
+                                    <i data-lucide="navigation" class="w-3 h-3"></i> 導航
+                                </button>
+                            </div>
+                            ${item.note ? `<p class="text-xs text-gray-500 mt-1">${item.note}</p>` : ''}
+                            ${tagsHtml}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+            lucide.createIcons();
         }
 
-        // 新增筆記
-        function addNote(e) {
+        // --- 記帳功能 (Local Storage) ---
+        function renderExpenses() {
+            const list = document.getElementById('expense-list');
+            const totalEl = document.getElementById('total-expense');
+            
+            let total = 0;
+            list.innerHTML = expenses.map((ex, i) => {
+                total += parseInt(ex.amount);
+                return `
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-50">
+                        <span class="text-sm text-gray-700">${ex.item}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-medium">NT$ ${ex.amount}</span>
+                            <button onclick="deleteExpense(${i})" class="text-gray-300 hover:text-red-400">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).reverse().join(''); // 新的在上面
+            
+            totalEl.innerText = total.toLocaleString();
+            localStorage.setItem('tw_trip_expenses', JSON.stringify(expenses));
+            lucide.createIcons();
+        }
+
+        function addExpense(e) {
             e.preventDefault();
-            const text = input.value.trim();
-            if (!text) return;
+            const item = document.getElementById('expense-item').value;
+            const amount = document.getElementById('expense-amount').value;
+            if(!item || !amount) return;
 
-            const newNote = {
-                id: Date.now(),
-                text: text,
-                timestamp: Date.now()
-            };
-
-            notes.push(newNote);
-            saveNotes();
-            
-            input.value = '';
-            input.blur(); // 收起鍵盤
-            renderNotes();
-            
-            // 滾動到頂部
-            container.scrollTo({ top: 0, behavior: 'smooth' });
+            expenses.push({ item, amount });
+            document.getElementById('expense-item').value = '';
+            document.getElementById('expense-amount').value = '';
+            renderExpenses();
         }
 
-        // 刪除相關功能
-        function askDelete(id) {
-            deleteId = id;
-            deleteModal.classList.remove('hidden');
-        }
-
-        function cancelDelete() {
-            deleteId = null;
-            deleteModal.classList.add('hidden');
-        }
-
-        function confirmDelete() {
-            if (deleteId) {
-                notes = notes.filter(n => n.id !== deleteId);
-                saveNotes();
-                renderNotes();
+        function deleteExpense(index) {
+            if(confirm('確定刪除這筆紀錄？')) {
+                // 因顯示是 reverse，所以刪除邏輯要對應
+                const realIndex = expenses.length - 1 - index;
+                expenses.splice(realIndex, 1);
+                renderExpenses();
             }
-            cancelDelete();
         }
 
-        // 資訊 Modal 控制
-        function showInfo() {
-            infoModal.classList.remove('hidden');
-            // 延遲一點點讓 CSS transition 生效
-            setTimeout(() => {
-                infoModal.classList.remove('opacity-0');
-                infoContent.classList.remove('scale-95');
-                infoContent.classList.add('scale-100');
-            }, 10);
+        // --- 頁面切換 ---
+        function switchTab(tabId) {
+            // 隱藏所有 view-section
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            // 顯示目標
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            // 更新 Tab 樣式
+            ['schedule', 'info', 'budget'].forEach(id => {
+                const btn = document.getElementById(`tab-${id}`);
+                if(id === tabId) {
+                    btn.className = "active-tab flex flex-col items-center transition-colors";
+                } else {
+                    btn.className = "inactive-tab flex flex-col items-center transition-colors";
+                }
+            });
         }
 
-        function closeInfo() {
-            infoModal.classList.add('opacity-0');
-            infoContent.classList.remove('scale-100');
-            infoContent.classList.add('scale-95');
-            setTimeout(() => {
-                infoModal.classList.add('hidden');
-            }, 300);
-        }
+        // 啟動
+        init();
 
-        // 儲存到 LocalStorage
-        function saveNotes() {
-            localStorage.setItem('myNotes', JSON.stringify(notes));
-        }
-
-        // 工具：HTML 轉義防止 XSS
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-        }
-
-        // 點擊 Modal 外部關閉
-        infoModal.addEventListener('click', (e) => {
-            if (e.target === infoModal) closeInfo();
-        });
-
-        // 初始渲染
-        renderNotes();
-
-        // 添加簡單的動畫 CSS
+        // 簡單動畫 CSS
         const style = document.createElement('style');
         style.innerHTML = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
+            @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            .animate-fade-in { animation: fade-in 0.3s ease-out; }
+            .animate-slide-up { animation: slide-up 0.4s ease-out; }
         `;
         document.head.appendChild(style);
 
