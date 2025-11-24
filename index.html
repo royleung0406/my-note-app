@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊小幫手</title>
+    <title>旅遊小幫手 v2</title>
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,7 +26,6 @@
     <style>
         :root {
             --bg-color: #FEFDF5;
-            --card-bg: #FFFFFF;
             --text-main: #433D3C;
             --text-sub: #9CA3AF;
             --accent: #D4C4B7;
@@ -79,27 +78,30 @@
         .filter-btn-inactive { color: rgba(255,255,255,0.6); }
         .weather-scroll-item { min-width: 60px; }
         
+        /* 同步狀態燈號 */
         #sync-indicator {
             position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(67, 61, 60, 0.8); color: white;
-            padding: 4px 12px; border-radius: 20px; font-size: 10px;
+            background: rgba(67, 61, 60, 0.9); color: white;
+            padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: bold;
             z-index: 9999; backdrop-filter: blur(4px);
             display: flex; align-items: center; gap: 6px;
-            transition: opacity 0.5s, transform 0.5s;
+            transition: opacity 0.3s, transform 0.3s;
             opacity: 0; pointer-events: none;
         }
         #sync-indicator.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #sync-indicator.error { background: rgba(239, 68, 68, 0.95); }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-[#FEFDF5]">
 
-    <div id="sync-indicator" class="show">
-        <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i>
-        <span>雲端同步中...</span>
+    <!-- 同步提示 -->
+    <div id="sync-indicator">
+        <i id="sync-icon" data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i>
+        <span id="sync-msg">同步中...</span>
     </div>
 
     <!-- 頂部資訊 -->
-    <header class="bg-[#FEFDF5]/90 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 flex justify-between items-end">
+    <header class="bg-[#FEFDF5]/90 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 flex justify-between items-end border-b border-stone-100/50">
         <div>
             <p class="text-[10px] text-gray-400 tracking-widest mb-1 font-bold">TAIPEI TRIP</p>
             <div class="flex items-center gap-2">
@@ -114,9 +116,10 @@
                 <i data-lucide="cloud" class="w-4 h-4 text-stone-400"></i>
                 <span class="text-sm font-bold">22°C</span>
             </div>
+            <!-- 連線狀態燈 -->
             <div class="flex items-center gap-1 mt-1">
-                <div class="w-1.5 h-1.5 rounded-full bg-gray-300" id="status-dot"></div>
-                <span class="text-[10px] text-stone-400" id="status-text">Connecting...</span>
+                <div id="status-dot" class="w-1.5 h-1.5 rounded-full bg-gray-300 transition-colors"></div>
+                <span id="status-text" class="text-[10px] text-stone-400">Connecting...</span>
             </div>
         </div>
     </header>
@@ -315,7 +318,7 @@
     <!-- Firebase Integration -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = {
@@ -327,80 +330,102 @@
           appId: "1:1063667328708:web:d2ae7acd304e589b790b91"
         };
 
-        let app, auth, db;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         
-        if (Object.keys(firebaseConfig).length === 0) {
-            console.warn("Firebase config is missing!");
-            document.getElementById('status-text').innerText = "No Cloud";
-            document.getElementById('status-dot').classList.replace('bg-green-400', 'bg-gray-400');
-            document.getElementById('sync-indicator').style.display = 'none';
-        } else {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
+        // 🔥 回歸 V2 版本
+        const appId = 'travel_app_v2';
+
+        // 診斷 UI 顯示
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const syncIndicator = document.getElementById('sync-indicator');
+        const syncIcon = document.getElementById('sync-icon');
+        const syncMsg = document.getElementById('sync-msg');
+
+        function showSyncing() {
+            syncIndicator.classList.add('show');
+            syncIndicator.classList.remove('error');
+            syncIcon.classList.add('animate-spin');
+            syncIcon.setAttribute('data-lucide', 'refresh-cw');
+            syncMsg.innerText = "同步中...";
+            lucide.createIcons();
         }
 
-        const appId = 'my-taiwan-trip';
+        function showSaved() {
+            syncIcon.classList.remove('animate-spin');
+            syncIcon.setAttribute('data-lucide', 'check');
+            syncMsg.innerText = "已儲存";
+            lucide.createIcons();
+            setTimeout(() => syncIndicator.classList.remove('show'), 1000);
+        }
+
+        function showError(msg) {
+            syncIndicator.classList.add('show', 'error');
+            syncIcon.classList.remove('animate-spin');
+            syncIcon.setAttribute('data-lucide', 'alert-circle');
+            syncMsg.innerText = msg || "儲存失敗 (請檢查網路/權限)";
+            lucide.createIcons();
+        }
 
         window.saveToFirestore = async (type, data) => {
-            if (!auth || !auth.currentUser) return;
+            if (!auth.currentUser) return;
             try {
-                const indicator = document.getElementById('sync-indicator');
-                indicator.classList.add('show');
+                showSyncing();
                 const docRef = doc(db, 'trips', appId, 'data', type);
                 await setDoc(docRef, { items: data });
-                setTimeout(() => indicator.classList.remove('show'), 800);
-            } catch (e) { console.error("Sync error:", e); }
+                showSaved();
+            } catch (e) { 
+                console.error("Sync error:", e); 
+                showError();
+            }
         };
 
         async function initFirebase() {
-            if (!auth) return;
-            
             try {
                 await signInAnonymously(auth);
                 
-                const scheduleRef = doc(db, 'trips', appId, 'data', 'schedule');
-                const expenseRef = doc(db, 'trips', appId, 'data', 'expenses');
-                const companionRef = doc(db, 'trips', appId, 'data', 'companions');
+                statusText.innerText = "Online";
+                statusDot.classList.replace('bg-gray-300', 'bg-green-400');
 
-                document.getElementById('status-text').innerText = "Synced";
-                document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-green-400');
-
-                onSnapshot(scheduleRef, (doc) => {
-                    if (doc.exists()) {
-                        window.scheduleData = doc.data().items;
-                        window.renderDaySelector();
-                        window.renderTimeline(window.currentDayIndex);
-                    } else {
-                        // Initial Load: Save the updated default schedule to Firestore
-                        window.saveToFirestore('schedule', window.defaultScheduleData);
-                    }
-                });
-
-                onSnapshot(expenseRef, (doc) => {
-                    if (doc.exists()) {
-                        window.expenses = doc.data().items;
-                        window.renderExpenses(); 
-                    } else {
-                        window.saveToFirestore('expenses', []);
-                    }
-                });
-
-                onSnapshot(companionRef, (doc) => {
-                    if (doc.exists()) {
-                        window.companions = doc.data().items;
-                        window.updatePayerSelect();
-                        window.renderShareButtons();
-                        window.renderFilter();
-                    } else {
-                        window.saveToFirestore('companions', ["我"]);
-                    }
+                // 監聽資料變更 (Real-time)
+                const types = ['schedule', 'expenses', 'companions'];
+                
+                types.forEach(type => {
+                    onSnapshot(doc(db, 'trips', appId, 'data', type), (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data().items;
+                            if(type === 'schedule') {
+                                window.scheduleData = data;
+                                window.renderDaySelector();
+                                window.renderTimeline(window.currentDayIndex);
+                            } else if(type === 'expenses') {
+                                window.expenses = data;
+                                window.renderExpenses();
+                            } else if(type === 'companions') {
+                                window.companions = data;
+                                window.updatePayerSelect();
+                                window.renderShareButtons();
+                                window.renderFilter();
+                            }
+                        } else {
+                            // 如果資料庫是空的 (第一次用 v2)，寫入預設值
+                            if(type === 'schedule') window.saveToFirestore('schedule', window.defaultScheduleData);
+                            if(type === 'expenses') window.saveToFirestore('expenses', []);
+                            if(type === 'companions') window.saveToFirestore('companions', ["我"]);
+                        }
+                    }, (error) => {
+                        console.error("Read error:", error);
+                        statusText.innerText = "Permission Error";
+                        statusDot.classList.replace('bg-green-400', 'bg-red-500');
+                    });
                 });
 
             } catch (e) { 
-                console.error("Auth/Sync error:", e); 
-                document.getElementById('status-text').innerText = "Error";
-                document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-red-400');
+                console.error("Auth error:", e); 
+                statusText.innerText = "Offline";
+                statusDot.classList.replace('bg-gray-300', 'bg-red-400');
             }
         }
 
@@ -410,7 +435,8 @@
     <script>
         // --- 資料與參數 ---
         const EXCHANGE_RATE = 0.24;
-        // Updated Default Data with 12/27 Start Date and Detailed Info
+        
+        // 完整 12/27 - 12/31 台灣行程 (包含詳細介紹)
         window.defaultScheduleData = [
             { 
                 date: "27", month: "12", day: "Day 1", 
@@ -466,7 +492,7 @@
             }
         ];
 
-        // Global State
+        // Global State (預設使用 defaultData)
         window.scheduleData = JSON.parse(JSON.stringify(window.defaultScheduleData));
         window.currentDayIndex = 0;
         window.expenses = [];
@@ -486,7 +512,6 @@
             });
         }
 
-        // Sync Wrappers
         function saveSchedule() { window.saveToFirestore('schedule', window.scheduleData); }
         
         // --- Core Logic ---
@@ -512,7 +537,6 @@
                 let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin';
                 let color = item.type==='food'?'text-orange-500 bg-orange-50':item.type==='transport'?'text-blue-500 bg-blue-50':item.type==='shop'?'text-pink-500 bg-pink-50':item.type==='stay'?'text-purple-500 bg-purple-50':'text-stone-500 bg-stone-100';
                 let tags = item.tags ? item.tags.map(t => `<span class="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-stone-50 text-stone-500 ${t.includes('必')?'tag-must-eat':''}">${t}</span>`).join('') : '';
-                
                 let timeDisplay = `<div class="text-center"><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.time}</span>`;
                 if(item.endTime) { timeDisplay += `<span class="text-[10px] text-stone-300 font-mono block leading-tight my-0.5">↓</span><span class="text-xs font-bold text-stone-400 font-mono block leading-tight">${item.endTime}</span>`; }
                 timeDisplay += `</div>`;
@@ -583,9 +607,17 @@
         window.deleteScheduleItem = function(d, i) { if(confirm("確定刪除？")) { window.scheduleData[d].items.splice(i, 1); window.saveToFirestore('schedule', window.scheduleData); window.renderTimeline(d); } }
         editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
 
-        // Date & Days Logic
+        // Date & Days
         const dateModal = document.getElementById('date-modal');
-        window.openDateModal = function() { const today = new Date().toISOString().split('T')[0]; document.getElementById('start-date-input').value = today; document.getElementById('trip-days-input').value = window.scheduleData.length; dateModal.classList.remove('hidden'); }
+        window.openDateModal = function() { 
+            // Try to get start date from first day of schedule
+            let today = new Date().toISOString().split('T')[0];
+            // Attempt to reconstruct year... assuming upcoming trip. 
+            // Simplification: let user pick.
+            document.getElementById('start-date-input').value = today; 
+            document.getElementById('trip-days-input').value = window.scheduleData.length; 
+            dateModal.classList.remove('hidden'); 
+        }
         window.closeDateModal = function() { dateModal.classList.add('hidden'); }
         window.changeDays = function(delta) { let v = parseInt(document.getElementById('trip-days-input').value) + delta; if(v < 1) v = 1; document.getElementById('trip-days-input').value = v; }
         window.updateTravelDates = function() {
@@ -598,8 +630,7 @@
             window.saveToFirestore('schedule', window.scheduleData); window.renderDaySelector(); window.renderTimeline(0); closeDateModal();
         }
 
-        // Util
-        function generateHourlyWeather() { const ws = [{i:'sun',t:22},{i:'cloud-sun',t:24},{i:'cloud',t:23},{i:'cloud-rain',t:20}]; let h=''; for(let i=6;i<=23;i++){ const m=ws[Math.floor(Math.random()*ws.length)]; h+=`<div class="weather-scroll-item flex flex-col items-center justify-center bg-stone-50 rounded-xl py-2 px-1 snap-start"><span class="text-[10px] text-stone-400 font-mono mb-1">${i}:00</span><i data-lucide="${m.i}" class="w-5 h-5 text-stone-600 mb-1"></i><span class="text-xs font-bold text-stone-800">${m.t}°</span></div>`; } document.getElementById('hourly-weather-container').innerHTML=h; }
+        // Reset
         window.resetToDefault = function() { 
             if(confirm("確定要恢復預設行程嗎？您目前的修改將會消失。")) { 
                 // 重要：將當前資料重置為預設資料，並立即同步到雲端
@@ -610,6 +641,8 @@
             } 
         }
         window.switchTab = function(tabId) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); ['schedule', 'info', 'budget'].forEach(id => { const btn = document.getElementById(`tab-${id}`); const span = btn.querySelector('span'); if(id === tabId) { btn.className = "active-tab flex items-center gap-2 px-5 py-3 tap-effect transition-all duration-300"; span.classList.remove('hidden'); } else { btn.className = "inactive-tab flex items-center gap-2 px-3 py-3 tap-effect transition-all duration-300"; span.classList.add('hidden'); } }); }
+
+        function generateHourlyWeather() { const ws = [{i:'sun',t:22},{i:'cloud-sun',t:24},{i:'cloud',t:23},{i:'cloud-rain',t:20}]; let h=''; for(let i=6;i<=23;i++){ const m=ws[Math.floor(Math.random()*ws.length)]; h+=`<div class="weather-scroll-item flex flex-col items-center justify-center bg-stone-50 rounded-xl py-2 px-1 snap-start"><span class="text-[10px] text-stone-400 font-mono mb-1">${i}:00</span><i data-lucide="${m.i}" class="w-5 h-5 text-stone-600 mb-1"></i><span class="text-xs font-bold text-stone-800">${m.t}°</span></div>`; } document.getElementById('hourly-weather-container').innerHTML=h; }
 
         init();
         
