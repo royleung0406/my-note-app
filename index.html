@@ -28,8 +28,6 @@
             --bg-color: #FEFDF5;
             --text-main: #433D3C;
             --text-sub: #9CA3AF;
-            --accent: #D4C4B7;
-            --highlight: #F43F5E;
         }
 
         body {
@@ -66,6 +64,7 @@
         .modal-enter { animation: slide-up-spring 0.4s ease-out forwards; }
         
         button, .card-clickable { touch-action: manipulation; cursor: pointer; }
+
         .share-btn-selected { background-color: #433D3C; color: #FFFFFF; border-color: #433D3C; }
         .share-btn-unselected { background-color: #F5F5F4; color: #A8A29E; border-color: transparent; }
         .filter-btn-active { background-color: rgba(255,255,255,0.2); color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); }
@@ -93,6 +92,16 @@
             padding: 20px;
         }
         #lock-screen.active { display: flex; }
+
+        /* 用戶選單 */
+        #user-menu {
+            position: absolute; top: 60px; right: 20px; background: white;
+            border-radius: 16px; padding: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            z-index: 50; display: none; flex-direction: column; gap: 4px; border: 1px solid #eee;
+        }
+        #user-menu.show { display: flex; }
+        #user-avatar { transition: all 0.3s; }
+        #user-avatar.logged-in { border: 2px solid #433D3C; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-[#FEFDF5]">
@@ -104,27 +113,49 @@
     </div>
 
     <!-- VIEW 0: 旅程列表 (首頁) -->
-    <div id="view-home" class="h-full flex flex-col p-6 animate-fade-in">
+    <div id="view-home" class="h-full flex flex-col p-6 animate-fade-in relative">
         <header class="mb-8 pt-safe-top flex justify-between items-end">
             <div>
                 <p class="text-xs text-stone-400 font-bold tracking-widest mb-1">TRAVEL LOG</p>
                 <h1 class="text-3xl font-black tracking-wide text-[#433D3C]">我的旅程</h1>
             </div>
-            <button onclick="createNewTrip()" class="bg-[#433D3C] text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg tap-effect">
-                <i data-lucide="plus" class="w-6 h-6"></i>
-            </button>
+            
+            <!-- 登入按鈕 / 頭像 -->
+            <div class="relative">
+                <button onclick="toggleUserMenu()" id="user-avatar" class="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center overflow-hidden tap-effect shadow-md">
+                    <i data-lucide="user" class="w-5 h-5 text-stone-500"></i>
+                    <img id="user-img" src="" class="w-full h-full object-cover hidden">
+                </button>
+                <!-- 用戶選單 -->
+                <div id="user-menu">
+                    <div id="user-info" class="px-4 py-2 text-xs text-stone-400 border-b border-stone-100 mb-1 hidden">
+                        未登入
+                    </div>
+                    <button onclick="handleLogin()" id="btn-login" class="px-4 py-2 text-sm font-bold text-stone-700 hover:bg-stone-50 rounded-lg text-left flex items-center gap-2">
+                        <i data-lucide="log-in" class="w-4 h-4"></i> Google 登入
+                    </button>
+                    <button onclick="handleLogout()" id="btn-logout" class="px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-lg text-left flex items-center gap-2 hidden">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> 登出
+                    </button>
+                </div>
+            </div>
         </header>
 
-        <div id="trip-list-container" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-10">
+        <div id="trip-list-container" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-24">
             <!-- JS 動態生成旅程卡片 -->
             <div class="text-center text-stone-400 mt-20">
                 <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2"></i>
                 <p>載入旅程中...</p>
             </div>
         </div>
+        
+        <!-- 懸浮新增按鈕 -->
+        <button onclick="createNewTrip()" class="absolute bottom-8 right-6 bg-[#433D3C] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl tap-effect z-10">
+            <i data-lucide="plus" class="w-8 h-8"></i>
+        </button>
     </div>
 
-    <!-- 鎖定畫面 (需要密碼時顯示) -->
+    <!-- 鎖定畫面 -->
     <div id="lock-screen">
         <div class="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-6 text-stone-400">
             <i data-lucide="lock" class="w-8 h-8"></i>
@@ -138,9 +169,8 @@
         <button onclick="backToHome()" class="mt-4 text-sm text-stone-400 underline">返回首頁</button>
     </div>
 
-    <!-- VIEW 1: 旅程詳情 (原本的 App 介面) -->
+    <!-- VIEW 1: 旅程詳情 -->
     <div id="view-app" class="h-full flex flex-col hidden">
-        <!-- 頂部資訊 -->
         <header class="bg-[#FEFDF5]/90 backdrop-blur-sm pt-safe-top sticky top-0 z-20 px-6 py-4 flex justify-between items-end border-b border-stone-100/50">
             <div class="flex items-center gap-3">
                 <button onclick="backToHome()" class="bg-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm text-stone-400 hover:text-stone-600 tap-effect">
@@ -150,7 +180,6 @@
                     <p class="text-[10px] text-gray-400 tracking-widest mb-0.5 font-bold">CURRENT TRIP</p>
                     <div class="flex items-center gap-2">
                         <h1 class="text-xl font-bold tracking-wide text-[#433D3C]" id="header-trip-title">旅程標題</h1>
-                        <!-- 鎖頭圖示：顯示目前狀態 -->
                         <button onclick="openSecurityModal()" class="text-stone-300 hover:text-stone-500 tap-effect p-1">
                             <i id="header-lock-icon" data-lucide="unlock" class="w-4 h-4"></i>
                         </button>
@@ -159,7 +188,6 @@
             </div>
             <div class="text-right flex flex-col items-end gap-1">
                 <div class="flex gap-2 mb-1">
-                    <!-- 設定按鈕 -->
                     <button onclick="openDateModal()" class="bg-white text-stone-400 p-1.5 rounded-full shadow-sm tap-effect">
                         <i data-lucide="settings-2" class="w-3 h-3"></i>
                     </button>
@@ -174,9 +202,7 @@
             </div>
         </header>
 
-        <!-- 主要內容區 -->
         <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-28 relative px-4">
-            
             <!-- Tab 1: 行程 -->
             <div id="view-schedule" class="view-section pt-2 space-y-6 animate-fade-in">
                 <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector"></div>
@@ -292,7 +318,6 @@
         </div>
     </div>
 
-    <!-- 行程設定 Modal (升級版) -->
     <div id="date-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-sm rounded-[32px] p-6 shadow-2xl modal-enter relative">
             <h3 class="text-lg font-bold mb-6 text-[#433D3C] text-center">行程設定</h3>
@@ -311,17 +336,14 @@
         </div>
     </div>
 
-    <!-- 安全設定 Modal (新增) -->
     <div id="security-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-sm rounded-[32px] p-6 shadow-2xl modal-enter relative text-center">
             <h3 class="text-lg font-bold mb-2 text-[#433D3C]">分享與安全設定</h3>
             <p class="text-xs text-stone-400 mb-6">設定通行碼，只有知道密碼的人才能查看行程。</p>
-            
             <div class="mb-6">
                 <label class="text-xs text-stone-500 font-bold mb-2 block text-left ml-1">設定通行碼 (4位數字)</label>
                 <input type="text" id="set-access-code" maxlength="4" class="w-full bg-white rounded-2xl p-4 text-2xl font-bold border border-transparent focus:border-stone-200 focus:outline-none shadow-sm text-center tracking-[0.5em]" placeholder="••••">
             </div>
-
             <div class="flex gap-3">
                 <button onclick="closeSecurityModal()" class="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-500 font-bold tap-effect">取消</button>
                 <button onclick="saveAccessCode()" class="flex-1 py-3 rounded-2xl bg-[#433D3C] text-white font-bold tap-effect shadow-lg shadow-stone-300">儲存設定</button>
@@ -332,8 +354,8 @@
     <!-- Firebase Integration -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc, getDoc, updateDoc, arrayUnion } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = {
           apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw",
@@ -347,10 +369,14 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        
+        // 認證提供者
+        const provider = new GoogleAuthProvider();
 
         window.myTrips = JSON.parse(localStorage.getItem('my_trips') || '[]');
         window.currentTripId = null;
         window.isOwner = false;
+        window.currentUser = null; // 用於儲存用戶資訊
 
         const urlParams = new URLSearchParams(window.location.search);
         const tripIdFromUrl = urlParams.get('id');
@@ -358,6 +384,81 @@
         const indicator = document.getElementById('sync-indicator');
         function showSyncing() { indicator.classList.add('show'); }
         function hideSyncing() { setTimeout(() => indicator.classList.remove('show'), 800); }
+
+        // --- Login / Logout Logic ---
+        window.toggleUserMenu = () => {
+            document.getElementById('user-menu').classList.toggle('show');
+        };
+        
+        // 點擊其他地方關閉選單
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('user-menu');
+            const avatar = document.getElementById('user-avatar');
+            if (!menu.contains(e.target) && !avatar.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        window.handleLogin = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                document.getElementById('user-menu').classList.remove('show');
+            } catch (error) {
+                console.error("Login failed", error);
+                alert("登入失敗: " + error.message);
+            }
+        };
+
+        window.handleLogout = async () => {
+            try {
+                await signOut(auth);
+                // 登出後切回匿名登入以保持功能正常
+                await signInAnonymously(auth);
+                document.getElementById('user-menu').classList.remove('show');
+                window.location.reload(); // 重新載入以重置狀態
+            } catch (error) {
+                console.error("Logout failed", error);
+            }
+        };
+
+        // --- Trip Synchronization Logic ---
+        
+        // 當用戶登入時，同步 LocalStorage 的行程到雲端個人資料
+        async function syncUserTrips(user) {
+            if (!user || user.isAnonymous) return;
+
+            // 1. 讀取用戶雲端的行程列表
+            const userProfileRef = doc(db, 'artifacts', 'travel_app_v2', 'users', user.uid, 'data', 'profile');
+            let cloudTrips = [];
+            
+            try {
+                const docSnap = await getDoc(userProfileRef);
+                if (docSnap.exists()) {
+                    cloudTrips = docSnap.data().ids || [];
+                }
+            } catch (e) { console.error("Error reading profile:", e); }
+
+            // 2. 合併：本地 -> 雲端
+            // 找出本地有，但雲端沒有的
+            const localTrips = window.myTrips;
+            const newCloudTrips = [...new Set([...cloudTrips, ...localTrips])];
+
+            // 如果有變動，更新雲端
+            if (newCloudTrips.length > cloudTrips.length) {
+                await setDoc(userProfileRef, { ids: newCloudTrips }, { merge: true });
+                console.log("Synced local trips to cloud.");
+            }
+
+            // 3. 合併：雲端 -> 本地
+            // 更新本地列表，確保在其他裝置也能看到
+            window.myTrips = newCloudTrips;
+            localStorage.setItem('my_trips', JSON.stringify(window.myTrips));
+
+            // 重新渲染首頁列表
+            if (!window.currentTripId) {
+                window.renderDashboard();
+            }
+        }
 
         // Cloud Functions
         window.saveTripMetadata = async (id, name, date, days, accessCode = null) => {
@@ -378,7 +479,6 @@
         // Access Control Logic
         window.tripMeta = {};
         window.checkAccess = (meta) => {
-            // 如果有密碼且使用者不是建立者，且尚未解鎖
             if (meta.accessCode && meta.ownerId !== auth.currentUser.uid) {
                 const unlocked = sessionStorage.getItem(`unlocked_${window.currentTripId}`);
                 if (unlocked !== 'true') {
@@ -411,6 +511,10 @@
             if(!window.myTrips.includes(tripId)) {
                 window.myTrips.push(tripId);
                 localStorage.setItem('my_trips', JSON.stringify(window.myTrips));
+                // 如果已登入，同步此新加入的行程到雲端
+                if (auth.currentUser && !auth.currentUser.isAnonymous) {
+                    syncUserTrips(auth.currentUser);
+                }
             }
 
             document.getElementById('view-home').classList.add('hidden');
@@ -420,7 +524,6 @@
                     window.tripMeta = docSnap.data().meta;
                     window.isOwner = (window.tripMeta.ownerId === auth.currentUser.uid);
                     
-                    // Update Lock Icon
                     const lockIcon = document.getElementById('header-lock-icon');
                     if (window.tripMeta.accessCode) {
                         lockIcon.setAttribute('data-lucide', 'lock');
@@ -459,7 +562,6 @@
         };
 
         window.renderTripView = () => {
-            // 只有通過權限檢查才渲染
             if (!document.getElementById('lock-screen').classList.contains('active')) {
                  window.renderDaySelector();
                  window.renderTimeline(window.currentDayIndex);
@@ -485,6 +587,8 @@
         };
 
         window.renderDashboard = async () => {
+            if(tripIdFromUrl) return;
+
             const container = document.getElementById('trip-list-container');
             container.innerHTML = '';
 
@@ -532,15 +636,43 @@
             lucide.createIcons();
         };
 
-        async function initFirebase() {
-            try {
-                await signInAnonymously(auth);
+        // Init Firebase & Auth Listener
+        function initFirebase() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    window.currentUser = user;
+                    if(user.isAnonymous) {
+                        // 匿名模式 UI
+                        document.getElementById('user-img').classList.add('hidden');
+                        document.getElementById('user-avatar').classList.remove('logged-in');
+                        document.getElementById('user-info').innerText = '訪客模式';
+                        document.getElementById('user-info').classList.remove('hidden');
+                        document.getElementById('btn-login').classList.remove('hidden');
+                        document.getElementById('btn-logout').classList.add('hidden');
+                    } else {
+                        // 已登入 UI
+                        document.getElementById('user-img').src = user.photoURL;
+                        document.getElementById('user-img').classList.remove('hidden');
+                        document.getElementById('user-avatar').classList.add('logged-in');
+                        document.getElementById('user-info').innerText = `Hi, ${user.displayName}`;
+                        document.getElementById('user-info').classList.remove('hidden');
+                        document.getElementById('btn-login').classList.add('hidden');
+                        document.getElementById('btn-logout').classList.remove('hidden');
+
+                        // 啟動同步
+                        syncUserTrips(user);
+                    }
+                } else {
+                    // 沒登入時自動匿名登入
+                    signInAnonymously(auth);
+                }
+                
                 if(tripIdFromUrl) {
                     window.loadTrip(tripIdFromUrl);
                 } else {
                     window.renderDashboard();
                 }
-            } catch (e) { console.error(e); }
+            });
         }
         initFirebase();
     </script>
@@ -548,8 +680,7 @@
     <script>
         // --- UI Logic ---
         const EXCHANGE_RATE = 0.24;
-        // (保留預設資料作為備份，但不會自動建立)
-        window.defaultScheduleData = [];
+        window.defaultScheduleData = []; // Clean default
 
         window.scheduleData = [];
         window.currentDayIndex = 0;
@@ -568,28 +699,24 @@
         }
 
         window.backToHome = function() {
-            // Clear ID from URL without reload
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            const newUrl = window.location.origin + window.location.pathname;
             window.history.pushState({path:newUrl},'',newUrl);
-            
             document.getElementById('view-app').classList.add('hidden');
             document.getElementById('view-home').classList.remove('hidden');
             window.currentTripId = null;
-            
             window.renderDashboard();
         };
 
         window.shareTrip = function() {
             if(!window.currentTripId) return;
             const url = window.location.origin + window.location.pathname + '?id=' + window.currentTripId;
-            if(window.tripMeta.accessCode) {
-                 alert(`分享連結已複製！\n\n此旅程已設定通行碼：${window.tripMeta.accessCode}\n請將密碼一併告訴朋友。`);
-            } else {
-                 alert("分享連結已複製！");
-            }
+            let msg = "分享連結已複製！";
+            if(window.tripMeta.accessCode) msg += `\n\n此旅程已設定通行碼：${window.tripMeta.accessCode}\n請將密碼一併告訴朋友。`;
             
             if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(url);
+                navigator.clipboard.writeText(url).then(() => alert(msg));
+            } else {
+                prompt("請複製以下連結分享給朋友：", url);
             }
         };
 
@@ -598,6 +725,11 @@
             if(!window.currentTripId) return;
             window.myTrips = window.myTrips.filter(id => id !== window.currentTripId);
             localStorage.setItem('my_trips', JSON.stringify(window.myTrips));
+            // If logged in, sync deletion to cloud list
+            if (auth.currentUser && !auth.currentUser.isAnonymous) {
+                 const userProfileRef = doc(db, 'artifacts', 'travel_app_v2', 'users', auth.currentUser.uid, 'data', 'profile');
+                 setDoc(userProfileRef, { ids: window.myTrips }, { merge: true });
+            }
             window.closeDateModal();
             window.backToHome();
         };
@@ -605,11 +737,7 @@
         // Security Functions
         const securityModal = document.getElementById('security-modal');
         window.openSecurityModal = function() { 
-            // Only owner can change password
-            if(!window.isOwner) {
-                alert("只有旅程建立者可以修改安全設定");
-                return;
-            }
+            if(!window.isOwner) return alert("只有旅程建立者可以修改安全設定");
             document.getElementById('set-access-code').value = window.tripMeta.accessCode || '';
             securityModal.classList.remove('hidden'); 
         }
@@ -618,10 +746,7 @@
         window.saveAccessCode = async function() {
             const code = document.getElementById('set-access-code').value;
             if(code && code.length !== 4) return alert("請設定 4 位數通行碼");
-            
-            // Save to cloud
             await window.saveTripMetadata(window.currentTripId, window.tripMeta.name, window.tripMeta.date, window.tripMeta.days, code || null);
-            
             window.closeSecurityModal();
             alert(code ? "已設定密碼保護" : "已移除密碼保護");
         };
@@ -640,7 +765,6 @@
         window.openDateModal = function() {
             const headerTitle = document.getElementById('header-trip-title').innerText;
             tripNameInput.value = headerTitle;
-            // Attempt to find start date
             const start = window.scheduleData[0] ? `2025-${window.scheduleData[0].month}-${window.scheduleData[0].date}` : ''; 
             startDateInput.value = window.tripMeta.date || new Date().toISOString().split('T')[0]; 
             tripDaysInput.value = window.scheduleData.length;
@@ -653,15 +777,10 @@
             const name = tripNameInput.value || "未命名旅程";
             const dStr = startDateInput.value;
             const days = parseInt(tripDaysInput.value);
-            
             if(!dStr) return alert("請選擇日期");
-            
-            // Update Metadata
             document.getElementById('header-trip-title').innerText = name;
-            // Preserve existing password
             window.saveTripMetadata(window.currentTripId, name, dStr, days, window.tripMeta.accessCode);
 
-            // Update Schedule Structure
             const start = new Date(dStr);
             if(days > window.scheduleData.length) { for(let i=window.scheduleData.length; i<days; i++) window.scheduleData.push({ date:"", month:"", day:`Day ${i+1}`, items:[] }); }
             else if(days < window.scheduleData.length) { if(!confirm(`確定減少天數？`)) return; window.scheduleData.length = days; }
@@ -677,11 +796,9 @@
             window.closeDateModal();
         }
 
-        // ... (All other render functions from previous turn, just ensure they use window.scheduleData etc.)
-        window.renderDaySelector = function() { 
-            const c = document.getElementById('day-selector'); 
-            c.innerHTML = window.scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===window.currentDayIndex?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month}/${d.date}</span></button>`).join(''); 
-        }
+        // ... (Rest of logic remains same: renderDaySelector, selectDay, renderTimeline, setFilter, renderFilter, renderExpenses, addExpense, deleteExpense, promptAddCompanion, updatePayerSelect, renderShareButtons, toggleShare, selectAllShares, openDetailModal, closeDetailModal, openAddModal, openEditModal, closeEditModal, saveScheduleItem, deleteScheduleItem, switchTab, generateHourlyWeather)
+        
+        window.renderDaySelector = function() { const c = document.getElementById('day-selector'); c.innerHTML = window.scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===window.currentDayIndex?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month}/${d.date}</span></button>`).join(''); }
         window.selectDay = function(i) { window.currentDayIndex = i; window.renderDaySelector(); window.renderTimeline(i); generateHourlyWeather(); }
         window.renderTimeline = function(i) { 
             const c = document.getElementById('timeline-container'); 
@@ -699,8 +816,6 @@
             }).join('') + `<button onclick="openAddModal(${i})" class="w-full py-4 rounded-[24px] border-2 border-dashed border-stone-200 text-stone-300 hover:border-stone-300 hover:text-stone-500 transition-all flex items-center justify-center gap-2 tap-effect mt-2 bg-white/50"><i data-lucide="plus" class="w-5 h-5"></i><span class="font-bold">新增行程</span></button>`;
             lucide.createIcons();
         }
-
-        // Expenses
         window.setFilter = function(name) { window.currentFilter = name; window.renderExpenses(); }
         window.renderFilter = function() { const c = document.getElementById('member-filter-container'); let h = `<button onclick="setFilter('ALL')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === 'ALL' ? 'filter-btn-active' : 'filter-btn-inactive'}">全體</button>`; window.companions.forEach(n => { h += `<button onclick="setFilter('${n}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === n ? 'filter-btn-active' : 'filter-btn-inactive'}">${n}</button>`; }); c.innerHTML = h; }
         window.renderExpenses = function() {
@@ -728,25 +843,13 @@
         window.renderShareButtons = function() { document.getElementById('share-buttons-container').innerHTML = window.companions.map(c => `<button type="button" class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors" data-name="${c}" onclick="toggleShare(this)">${c}</button>`).join(''); }
         window.toggleShare = function(btn) { if (btn.classList.contains('share-btn-selected')) { btn.classList.remove('share-btn-selected'); btn.classList.add('share-btn-unselected'); } else { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); } }
         window.selectAllShares = function() { document.querySelectorAll('.share-toggle-btn').forEach(btn => { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); }); }
-
-        // Modals
-        const detailModal = document.getElementById('detail-modal'); const detailContent = document.getElementById('detail-content');
-        window.openDetailModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin'; let timeStr = item.time; if (item.endTime) timeStr += ` - ${item.endTime}`; 
-            const desc = item.description ? item.description.split('\n').map(l=>`<p class="mb-2">${l}</p>`).join('') : '<p class="text-stone-400 italic">暫無詳細介紹...</p>';
-            detailContent.innerHTML = `<div class="flex items-start justify-between mb-2"><div class="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div class="text-right"><p class="text-2xl font-mono font-bold text-stone-800">${timeStr}</p><p class="text-xs text-stone-400 font-bold">11月${window.scheduleData[dayIndex].date}日</p></div></div><h2 class="text-2xl font-bold text-[#433D3C] mb-1 leading-tight">${item.title}</h2><button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" class="inline-flex items-center gap-1.5 text-blue-500 text-sm font-bold mb-4 tap-effect"><i data-lucide="map-pin" class="w-4 h-4"></i> ${item.location || '設定地點'} <i data-lucide="external-link" class="w-3 h-3"></i></button><div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><h4 class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-wider">ABOUT</h4><div class="text-stone-600 text-sm leading-relaxed space-y-2">${desc}</div></div>`; 
-            detailModal.classList.remove('hidden'); lucide.createIcons(); 
-        }
-        window.closeDetailModal = function() { detailModal.classList.add('hidden'); }
-        detailModal.addEventListener('click', (e) => { if (e.target === detailModal) closeDetailModal(); });
-
-        const editModal = document.getElementById('edit-modal'); const modalTitle = document.getElementById('modal-title');
-        window.openAddModal = function(dayIndex) { document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = -1; modalTitle.innerText = "新增行程"; document.getElementById('edit-time').value = "12:00"; document.getElementById('edit-end-time').value = ""; document.getElementById('edit-type').value = "sight"; document.getElementById('edit-title').value = ""; document.getElementById('edit-location').value = ""; document.getElementById('edit-tags').value = ""; document.getElementById('edit-note').value = ""; document.getElementById('edit-description').value = ""; editModal.classList.remove('hidden'); }
-        window.openEditModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = itemIndex; modalTitle.innerText = "編輯行程"; document.getElementById('edit-time').value = item.time; document.getElementById('edit-end-time').value = item.endTime || ""; document.getElementById('edit-type').value = item.type; document.getElementById('edit-title').value = item.title; document.getElementById('edit-location').value = item.location; document.getElementById('edit-tags').value = item.tags?item.tags.join(', '):''; document.getElementById('edit-note').value = item.note||''; document.getElementById('edit-description').value = item.description||''; editModal.classList.remove('hidden'); }
-        window.closeEditModal = function() { editModal.classList.add('hidden'); }
-        window.saveScheduleItem = function(e) { e.preventDefault(); const d = parseInt(document.getElementById('edit-day-index').value); const i = parseInt(document.getElementById('edit-item-index').value); const item = { time: document.getElementById('edit-time').value, endTime: document.getElementById('edit-end-time').value, type: document.getElementById('edit-type').value, title: document.getElementById('edit-title').value, location: document.getElementById('edit-location').value, tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(t=>t), note: document.getElementById('edit-note').value, description: document.getElementById('edit-description').value }; if (i === -1) window.scheduleData[d].items.push(item); else window.scheduleData[d].items[i] = item; window.saveCurrentSchedule(); window.renderTimeline(d); closeEditModal(); }
+        window.openDetailModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin'; let timeStr = item.time; if (item.endTime) timeStr += ` - ${item.endTime}`; const desc = item.description ? item.description.split('\n').map(l=>`<p class="mb-2">${l}</p>`).join('') : '<p class="text-stone-400 italic">暫無詳細介紹...</p>'; document.getElementById('detail-content').innerHTML = `<div class="flex items-start justify-between mb-2"><div class="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-600"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div class="text-right"><p class="text-2xl font-mono font-bold text-stone-800">${timeStr}</p><p class="text-xs text-stone-400 font-bold">11月${window.scheduleData[dayIndex].date}日</p></div></div><h2 class="text-2xl font-bold text-[#433D3C] mb-1 leading-tight">${item.title}</h2><button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}')" class="inline-flex items-center gap-1.5 text-blue-500 text-sm font-bold mb-4 tap-effect"><i data-lucide="map-pin" class="w-4 h-4"></i> ${item.location || '設定地點'} <i data-lucide="external-link" class="w-3 h-3"></i></button><div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><h4 class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-wider">ABOUT</h4><div class="text-stone-600 text-sm leading-relaxed space-y-2">${desc}</div></div>`; document.getElementById('detail-modal').classList.remove('hidden'); lucide.createIcons(); }
+        window.closeDetailModal = function() { document.getElementById('detail-modal').classList.add('hidden'); }
+        window.openAddModal = function(dayIndex) { document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = -1; document.getElementById('modal-title').innerText = "新增行程"; document.getElementById('edit-time').value = "12:00"; document.getElementById('edit-end-time').value = ""; document.getElementById('edit-type').value = "sight"; document.getElementById('edit-title').value = ""; document.getElementById('edit-location').value = ""; document.getElementById('edit-tags').value = ""; document.getElementById('edit-note').value = ""; document.getElementById('edit-description').value = ""; document.getElementById('edit-modal').classList.remove('hidden'); }
+        window.openEditModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = itemIndex; document.getElementById('modal-title').innerText = "編輯行程"; document.getElementById('edit-time').value = item.time; document.getElementById('edit-end-time').value = item.endTime || ""; document.getElementById('edit-type').value = item.type; document.getElementById('edit-title').value = item.title; document.getElementById('edit-location').value = item.location; document.getElementById('edit-tags').value = item.tags?item.tags.join(', '):''; document.getElementById('edit-note').value = item.note||''; document.getElementById('edit-description').value = item.description||''; document.getElementById('edit-modal').classList.remove('hidden'); }
+        window.closeEditModal = function() { document.getElementById('edit-modal').classList.add('hidden'); }
+        window.saveScheduleItem = function(e) { e.preventDefault(); const d = parseInt(document.getElementById('edit-day-index').value); const i = parseInt(document.getElementById('edit-item-index').value); const item = { time: document.getElementById('edit-time').value, endTime: document.getElementById('edit-end-time').value, type: document.getElementById('edit-type').value, title: document.getElementById('edit-title').value, location: document.getElementById('edit-location').value, tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(t=>t), note: document.getElementById('edit-note').value, description: document.getElementById('edit-description').value }; if (i === -1) window.scheduleData[d].items.push(item); else window.scheduleData[d].items[i] = item; window.saveCurrentSchedule(); window.renderTimeline(d); window.closeEditModal(); }
         window.deleteScheduleItem = function(d, i) { if(confirm("確定刪除？")) { window.scheduleData[d].items.splice(i, 1); window.saveCurrentSchedule(); window.renderTimeline(d); } }
-        editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
-
         window.switchTab = function(tabId) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); ['schedule', 'info', 'budget'].forEach(id => { const btn = document.getElementById(`tab-${id}`); const span = btn.querySelector('span'); if(id === tabId) { btn.className = "active-tab flex items-center gap-2 px-5 py-3 tap-effect transition-all duration-300"; span.classList.remove('hidden'); } else { btn.className = "inactive-tab flex items-center gap-2 px-3 py-3 tap-effect transition-all duration-300"; span.classList.add('hidden'); } }); }
         function generateHourlyWeather() { const ws = [{i:'sun',t:22},{i:'cloud-sun',t:24},{i:'cloud',t:23},{i:'cloud-rain',t:20}]; let h=''; for(let i=6;i<=23;i++){ const m=ws[Math.floor(Math.random()*ws.length)]; h+=`<div class="weather-scroll-item flex flex-col items-center justify-center bg-stone-50 rounded-xl py-2 px-1 snap-start"><span class="text-[10px] text-stone-400 font-mono mb-1">${i}:00</span><i data-lucide="${m.i}" class="w-5 h-5 text-stone-600 mb-1"></i><span class="text-xs font-bold text-stone-800">${m.t}°</span></div>`; } document.getElementById('hourly-weather-container').innerHTML=h; }
 
