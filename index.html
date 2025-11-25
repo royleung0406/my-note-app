@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊小幫手 v3.2 (Shared)</title>
+    <title>旅遊小幫手 v3.4 (Persistent Link)</title>
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -118,7 +118,7 @@
             opacity: 1;
             z-index: 10;
         }
-        /com/
+        
         /* Trip Card */
         .trip-card-bg-0 { background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); }
         .trip-card-bg-1 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
@@ -422,7 +422,7 @@
             <h3 class="text-xl font-bold mb-2 text-[#433D3C]">邀請旅伴</h3>
             <p class="text-xs text-stone-400 mb-6">將此代碼分享給朋友，他們即可加入行程</p>
             
-            <div id="invite-code-display" class="bg-stone-800 text-white rounded-2xl py-4 px-2 mb-2 cursor-pointer tap-effect">
+            <div id="invite-code-display" class="bg-stone-800 text-white rounded-2xl py-4 px-2 mb-2 cursor-pointer tap-effect transition-transform active:scale-95">
                 <span class="text-3xl font-mono font-bold tracking-widest select-all">LOADING</span>
             </div>
             <p class="text-[10px] text-stone-400 mb-6">點擊代碼即可複製</p>
@@ -481,7 +481,6 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        // 1. Setup Firebase using environment config
         const firebaseConfig = {
             apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw",
             authDomain: "mytaiwantrip-603c6.firebaseapp.com",
@@ -495,17 +494,14 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
         
-        // 2. Use __app_id for environment consistency
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'travel_app_v2';
         let currentUser = null;
         
-        // Multi-Trip State
         window.currentTripId = null;
-        window.currentTripOwner = null; // NEW: Track who owns the current trip
+        window.currentTripOwner = null;
         window.tripsList = [];
         let tripUnsubscribes = []; 
 
-        // UI Helpers
         const statusText = document.getElementById('status-text');
         const statusDot = document.getElementById('status-dot');
         const syncIndicator = document.getElementById('sync-indicator');
@@ -544,12 +540,10 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // 3. Save Logic (Supports Shared Trips)
         window.saveToFirestore = async (type, data) => {
             if (!currentUser) { showToast("尚未連線，無法儲存"); return; }
             if (!window.currentTripId) return;
 
-            // KEY CHANGE: If I am a guest, save to the Owner's path
             const targetUid = window.currentTripOwner || currentUser.uid;
 
             try {
@@ -564,7 +558,6 @@
             }
         };
         
-        // Save Trip Index List (Always my own)
         window.saveTripsIndex = async (trips) => {
              if (!currentUser) return;
              try {
@@ -578,33 +571,34 @@
             }
         }
 
-        // 4. Initialize Auth & Listeners
         async function initFirebase() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
                     await signInWithCustomToken(auth, __initial_auth_token);
+                } catch (e) {
+                    console.warn("Custom token failed, falling back to anonymous auth", e);
                 }
-                
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        currentUser = user;
-                        updateAuthUI(user);
-                        statusText.innerText = user.isAnonymous ? "Guest Mode" : "Google Cloud";
-                        statusDot.classList.replace('bg-gray-300', 'bg-green-400');
-                        loadTripList(user.uid); 
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                });
-
-            } catch (e) { 
-                console.error("Auth error:", e); 
-                statusText.innerText = "Offline";
-                statusDot.classList.replace('bg-gray-300', 'bg-red-400');
             }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    updateAuthUI(user);
+                    statusText.innerText = user.isAnonymous ? "Guest Mode" : "Google Cloud";
+                    statusDot.classList.replace('bg-gray-300', 'bg-green-400');
+                    loadTripList(user.uid); 
+                } else {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (e) {
+                         console.error("Anonymous auth failed", e);
+                         statusText.innerText = "Offline";
+                         statusDot.classList.replace('bg-gray-300', 'bg-red-400');
+                    }
+                }
+            });
         }
         
-        // Google Auth
         window.loginWithGoogle = async () => {
             try {
                 await signInWithPopup(auth, provider);
@@ -646,7 +640,6 @@
             lucide.createIcons();
         }
 
-        // 5. Load Trip List
         function loadTripList(uid) {
             const indexRef = doc(db, 'artifacts', appId, 'users', uid, 'travel_data', 'trips_index');
             
@@ -660,12 +653,10 @@
             });
         }
 
-        // 6. Start Listeners for Specific Trip (Modified for Shared Trips)
         window.startTripListeners = function(tripId) {
             tripUnsubscribes.forEach(unsub => unsub());
             tripUnsubscribes = [];
             
-            // KEY CHANGE: Listen to Owner's path if it exists
             const targetUid = window.currentTripOwner || currentUser.uid;
 
             const types = ['schedule', 'expenses', 'companions'];
@@ -691,6 +682,12 @@
                             window.renderFilter();
                         }
                     } else {
+                        if(window.currentTripOwner && window.currentTripOwner !== currentUser.uid) {
+                           if(type === 'schedule') {
+                               showToast("⚠️ 找不到行程資料 (Data Not Found)");
+                           }
+                        }
+
                         if(type === 'schedule') window.scheduleData = []; 
                         if(type === 'expenses') window.expenses = [];
                         if(type === 'companions') window.companions = ["我"];
@@ -706,40 +703,59 @@
             });
         }
         
-        // --- NEW INVITE/JOIN SYSTEM ---
+        // --- NEW: PERSISTENT INVITE SYSTEM ---
         
-        // 1. Open Invite Modal and Generate Code
+        // 1. Open Invite Modal (Logic Updated: Reuse existing code)
         window.openInviteModal = async function() {
             document.getElementById('invite-modal').classList.remove('hidden');
             const codeDisplay = document.querySelector('#invite-code-display span');
-            codeDisplay.innerText = "...";
-
+            
             if (!window.currentTripId) return;
+            
+            // Find current trip in list
+            const trip = window.tripsList.find(t => t.id === window.currentTripId);
+            if (!trip) return;
 
+            // Setup click to copy event (runs for both cases)
+            document.getElementById('invite-code-display').onclick = () => {
+                if(codeDisplay.innerText !== "..." && codeDisplay.innerText !== "ERROR") {
+                    navigator.clipboard.writeText(codeDisplay.innerText);
+                    showToast("已複製代碼！");
+                }
+            };
+
+            // CHECK: Does this trip ALREADY have a code?
+            if (trip.inviteCode) {
+                // YES: Show the existing code. Do NOT generate a new one.
+                codeDisplay.innerText = trip.inviteCode;
+                return;
+            }
+
+            // NO: This is the first time sharing. Generate, Save, and Persist.
+            codeDisplay.innerText = "...";
+            
             // Generate 6-char code
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            
-            // Save to public invites collection: artifacts/{appId}/public/data/invites/{code}
+            const realOwnerUid = window.currentTripOwner || currentUser.uid;
+
             try {
-                // We use the 'invites' collection in public data
+                // 1. Save to Public Map (Code -> Trip)
                 const inviteRef = doc(db, 'artifacts', appId, 'public', 'data', 'invites', code);
-                const trip = window.tripsList.find(t => t.id === window.currentTripId);
-                
                 await setDoc(inviteRef, {
                     tripId: window.currentTripId,
-                    ownerUid: currentUser.uid,
+                    ownerUid: realOwnerUid,
                     title: trip.title,
                     startDate: trip.startDate,
                     days: trip.days,
                     createdAt: new Date().toISOString()
                 });
                 
+                // 2. Save to LOCAL Trip List (Trip -> Code)
+                // This ensures next time we open this modal, we find the code above.
+                trip.inviteCode = code; 
+                await window.saveTripsIndex(window.tripsList);
+
                 codeDisplay.innerText = code;
-                
-                document.getElementById('invite-code-display').onclick = () => {
-                    navigator.clipboard.writeText(code);
-                    showToast("已複製代碼！");
-                };
                 
             } catch(e) {
                 console.error(e);
@@ -748,13 +764,12 @@
             }
         }
 
-        // 2. Open Join Modal
         window.openJoinModal = function() {
             document.getElementById('join-modal').classList.remove('hidden');
             document.getElementById('join-code-input').value = "";
         }
 
-        // 3. Confirm Join
+        // 3. Confirm Join (Logic Updated: Store code for guest)
         window.confirmJoinTrip = async function() {
             const code = document.getElementById('join-code-input').value.trim().toUpperCase();
             if(code.length !== 6) { showToast("請輸入 6 位數代碼"); return; }
@@ -790,14 +805,14 @@
                     title: inviteData.title,
                     startDate: inviteData.startDate,
                     days: inviteData.days,
-                    ownerUid: inviteData.ownerUid, // Store Owner UID
-                    isShared: true
+                    ownerUid: inviteData.ownerUid, 
+                    isShared: true,
+                    inviteCode: code // <--- NEW: Save the code for the guest too!
                 };
                 
                 window.tripsList.push(newTripMeta);
                 await window.saveTripsIndex(window.tripsList);
                 
-                // Auto-add myself to owner's companion list
                 try {
                     const companionRef = doc(db, 'artifacts', appId, 'users', inviteData.ownerUid, 'travel_data', `${inviteData.tripId}_companions`);
                     const cSnap = await getDoc(companionRef);
@@ -940,7 +955,9 @@
             document.getElementById('header-title').innerText = trip.title;
             
             if(window.currentTripOwner && window.currentTripOwner !== currentUser?.uid) {
-                document.getElementById('header-subtitle').innerText = "SHARED TRIP";
+                // Debugging / Visual Cue for Shared Trips
+                const shortId = window.currentTripOwner.substring(0,6);
+                document.getElementById('header-subtitle').innerText = `SHARED BY ${shortId}...`;
             } else {
                 document.getElementById('header-subtitle').innerText = "TRIP";
             }
@@ -983,7 +1000,8 @@
                 title: title,
                 startDate: startDate,
                 days: days,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                inviteCode: null // Init as null
             };
             
             // 1. Prepare Initial Data
