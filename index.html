@@ -485,18 +485,9 @@
         };
 
         window.renderDashboard = async () => {
-            if(tripIdFromUrl) {
-                // 如果網址有 ID，直接載入該旅程
-                // 這裡我們等待 Auth 完成後再載入
-                return; 
-            }
-
             const container = document.getElementById('trip-list-container');
             container.innerHTML = '';
 
-            // 這裡移除了「自動建立預設行程」的邏輯
-            // 只有當 window.myTrips 是空的時候，畫面會是空的
-            
             if (window.myTrips.length === 0) {
                  container.innerHTML = `
                     <div class="text-center text-stone-400 mt-20 flex flex-col items-center">
@@ -557,13 +548,8 @@
     <script>
         // --- UI Logic ---
         const EXCHANGE_RATE = 0.24;
-        window.defaultScheduleData = [
-            { date: "27", month: "12", day: "Day 1", items: [{ time: "08:00", endTime: "10:00", title: "抵達落機", type: "transport", location: "台灣桃園國際機場", note: "購買悠遊卡/SIM卡", description: "機場捷運直達車約35-40分鐘可抵達台北車站。記得在機場先換好台幣，或使用ATM提款。" }, { time: "11:00", endTime: "12:00", title: "民宿擺行李", type: "stay", location: "台北", note: "寄放行李", description: "先將行李寄放，輕裝上陣開始行程。" }, { time: "13:00", endTime: "14:30", title: "程味珍意麵滷味", type: "food", location: "程味珍意麵", tags: ["必吃滷味"], note: "40年老店", description: "西門町老字號，滷味非常入味，必點滷蘿蔔、大豆干和意麵。滷汁帶點甜味，非常開胃。" }, { time: "15:00", endTime: "16:30", title: "西門町", type: "sight", location: "西門町", tags: ["逛街"], note: "年輕人集散地", description: "台北潮流中心，必逛唐吉訶德、萬年大樓。推薦小吃：阿宗麵線、天天利美食坊。" }, { time: "17:00", endTime: "18:30", title: "妳有咖啡 neo cafe", type: "food", location: "妳有咖啡 neo cafe", tags: ["咖啡", "Pizza"], note: "隱藏版咖啡廳", description: "位於二樓的復古風咖啡廳，環境舒適。推薦嘗試他們的「大人味焦糖布丁」和特色口味Pizza。" }, { time: "19:00", endTime: "20:30", title: "詹記麻辣火鍋", type: "food", location: "詹記麻辣火鍋 西門大世界", tags: ["必吃鴨血", "需訂位"], note: "台北最難訂", description: "復古台式裝潢，鴨血口感像果凍一樣滑嫩！記得點油條吸滿湯汁。" }, { time: "21:00", endTime: "22:30", title: "南機場夜市", type: "food", location: "南機場夜市", tags: ["在地美食"], note: "CP值高", description: "雖無捷運直達但深受在地人喜愛。推薦：山內雞肉、臭老闆現蒸臭豆腐、八棟圓仔湯。" }] },
-            { date: "28", month: "12", day: "Day 2", items: [{ time: "09:00", endTime: "10:00", title: "早餐", type: "food", location: "台北", note: "附近早餐店", description: "找間傳統豆漿店或蛋餅店開啟一天。" }, { time: "12:00", endTime: "15:30", title: "九份十份", type: "sight", location: "九份老街", tags: ["山城", "燈籠"], note: "神隱少女場景", description: "建議先去十分瀑布和放天燈，傍晚再到九份老街看夜景。必吃：阿柑姨芋圓、阿蘭草仔粿。" }, { time: "16:00", endTime: "17:30", title: "猴硐貓村", type: "sight", location: "猴硐貓村", tags: ["貓咪", "煤礦"], note: "CNN推薦", description: "貓奴天堂，請勿對貓咪開閃光燈。也可參觀願景館了解煤礦歷史。" }, { time: "19:00", endTime: "20:30", title: "大股熟成燒肉", type: "food", location: "大股熟成燒肉專門 台北南京店", tags: ["厚切牛舌"], note: "清酒販賣機", description: "全程專人代烤，必玩店內的清酒投幣機，厚切牛舌口感極佳。" }, { time: "22:00", endTime: "23:30", title: "寧夏夜市", type: "food", location: "寧夏夜市", tags: ["米其林推薦"], note: "路寬好逛", description: "動線單純，美食集中。必吃：劉芋仔蛋黃芋餅(必排)、圓環邊蚵仔煎、豬肝榮仔。" }] },
-            { date: "29", month: "12", day: "Day 3", items: [{ time: "11:00", endTime: "12:30", title: "犁園湯包館", type: "food", location: "犁園湯包館", tags: ["絲瓜湯包"], note: "平價鼎泰豐", description: "必點絲瓜蝦仁湯包，清爽鮮甜。羅勒鮮蚵湯包也很有特色，流沙包當甜點很棒。" }, { time: "14:00", endTime: "15:00", title: "三創生活園區", type: "sight", location: "三創生活園區", tags: ["3C", "動漫"], note: "科技商場", description: "各樓層主題鮮明，動漫迷與3C控必逛。旁邊就是光華商場。" }, { time: "15:00", endTime: "17:00", title: "華山1914", type: "sight", location: "華山1914文化創意產業園區", tags: ["展覽", "拍照"], note: "文青聚集地", description: "舊酒廠改建，充滿文藝氣息，常有特色特展與市集，大草皮適合休息。" }, { time: "17:00", endTime: "18:00", title: "帕米貝可", type: "shop", location: "帕米貝可", tags: ["伴手禮", "蝴蝶酥"], note: "千層酥脆", description: "非常有名的千層蝴蝶酥，酥脆不甜膩，適合買回香港送禮。" }, { time: "19:00", endTime: "20:30", title: "拾漁", type: "food", location: "拾漁 永康店", tags: ["日式無菜單"], note: "高CP值", description: "食材新鮮，CP值很高的無菜單料理，需準時入席。" }, { time: "21:00", endTime: "22:30", title: "饒河夜市", type: "food", location: "饒河街觀光夜市", tags: ["米其林必比登"], note: "藥燉排骨", description: "入口處的「福州世祖胡椒餅」必排，陳董藥燉排骨冬天吃最暖胃。" }] },
-            { date: "30", month: "12", day: "Day 4", items: [{ time: "12:00", endTime: "13:30", title: "比漾廣場", type: "shop", location: "比漾廣場", tags: ["百貨"], note: "永和在地", description: "永和在地的百貨公司，適合悠閒逛街或用餐。" }, { time: "14:00", endTime: "15:30", title: "樂華商圈", type: "sight", location: "樂華夜市", tags: ["在地夜市"], note: "路寬好逛", description: "雖然是夜市，下午也有不少店家。推薦：郭記麻辣臭豆腐、永美雪花冰。" }, { time: "16:00", endTime: "17:00", title: "Chii! Gelato", type: "food", location: "Chii! Gelato", tags: ["義式冰淇淋"], note: "天然濃郁", description: "口味非常道地，推薦開心果口味，水果系列也很清爽。" }, { time: "19:00", endTime: "20:30", title: "金月日本鍋", type: "food", location: "金月日本鍋料理擔當", tags: ["清酒湯底"], note: "頂級鍋物", description: "以清酒入湯是一大特色，專人桌邊服務，煮海鮮和和牛都非常鮮甜。" }, { time: "21:00", endTime: "22:30", title: "臨江街夜市", type: "food", location: "臨江街觀光夜市", tags: ["通化夜市"], note: "市區方便", description: "推薦：御品元冰火湯圓(必吃)、紅花麻辣鹽水雞、梁記滷味。" }] },
-            { date: "31", month: "12", day: "Day 5", items: [{ time: "12:00", endTime: "12:30", title: "Check Out", type: "stay", location: "台北", note: "檢查行李", description: "最後一天，確認東西都帶齊了嗎？" }, { time: "14:00", endTime: "17:00", title: "華泰名品城", type: "shop", location: "GLORIA OUTLETS 華泰名品城", tags: ["Outlet"], note: "最後衝刺", description: "位於桃園高鐵旁，美式露天Outlet，各大國際精品折扣多，回港前最後衝刺。" }, { time: "19:00", endTime: "20:00", title: "晚餐", type: "food", location: "桃園機場/高鐵站", note: "簡單用餐", description: "在機場或高鐵站附近簡單用餐，準備登機。" }, { time: "22:00", endTime: "23:00", title: "回香港", type: "transport", location: "桃園機場", note: "提早報到", description: "建議提早 2.5 小時抵達機場辦理登機與退稅。" }] }
-        ];
+        // (保留預設資料作為備份，但不會自動建立)
+        window.defaultScheduleData = [];
 
         window.scheduleData = [];
         window.currentDayIndex = 0;
@@ -582,9 +568,14 @@
         }
 
         window.backToHome = function() {
+            // Clear ID from URL without reload
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({path:newUrl},'',newUrl);
+            
             document.getElementById('view-app').classList.add('hidden');
             document.getElementById('view-home').classList.remove('hidden');
             window.currentTripId = null;
+            
             window.renderDashboard();
         };
 
