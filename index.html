@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Zen+Maru+Gothic:wght=400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;700&family=Zen+Maru+Gothic:wght=400;500;700;900&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -493,12 +493,13 @@
         };
         
         // --- Firestore Path Helper ---
-        // Determines if the data should be saved to the Private or Public path
-        function getTripDocRef(tripId, collectionName) {
+        // Modified to accept a forcePublic flag
+        function getTripDocRef(tripId, collectionName, forcePublic = false) {
             const currentContext = window.currentTrip;
             const docName = `${tripId}_${collectionName}`;
             
-            if (currentContext.isShared && currentContext.sharedId) {
+            // Check if we are in shared mode OR if we are forcing a public read (for initial metadata load)
+            if (currentContext.isShared || forcePublic) {
                 // Public/Shared Path: artifacts/{appId}/public/data/shared_trips/{sharedId}_{collectionName}
                 return doc(db, 'artifacts', appId, 'public', 'data', 'shared_trips', docName);
             } else {
@@ -717,6 +718,7 @@
         
         // 6. Load Shared Trip (New functionality)
         window.loadSharedTrip = async function(sharedTripId) {
+            // FIX: Pass true to getTripDocRef to force reading from the public path for metadata
             const metaRef = getTripDocRef(sharedTripId, 'meta', true);
             const metaSnap = await getDoc(metaRef);
             
@@ -756,6 +758,7 @@
             document.getElementById('view-trip-detail').classList.add('page-active');
             
             // Start listening on public paths
+            // Note: startTripListeners will now use the correct public path because currentTrip.isShared is true
             window.startTripListeners(sharedTripId);
         }
 
@@ -899,13 +902,25 @@
             showSyncing();
             
             // Save Metadata (This is the "master" switch for the public doc)
+            // Use getTripDocRef with forcePublic: true to save to the public path
             const metaRef = getTripDocRef(tripId, 'meta', true);
             await setDoc(metaRef, sharedMeta);
             
-            // Save Content
+            // Save Content (These implicitly use isShared=false context from currentTrip state here)
+            // However, after updating window.currentTrip below, subsequent saves will use the public path correctly.
+            // For the *initial publish*, we need to manually ensure it uses the public path if we rely on window.saveToFirestore.
+            
+            // Temporary manual override to ensure saveToFirestore writes to public path
+            const originalIsShared = window.currentTrip.isShared;
+            window.currentTrip.isShared = true; // Temporary context switch for saving
+            window.currentTrip.sharedId = tripId;
+            
             await window.saveToFirestore('schedule', window.scheduleData);
             await window.saveToFirestore('expenses', window.expenses);
             await window.saveToFirestore('companions', window.companions);
+            
+            // Restore context
+            window.currentTrip.isShared = originalIsShared; 
             
             showSaved();
             window.showToast("✅ 行程已成功發布為協作模式！");
