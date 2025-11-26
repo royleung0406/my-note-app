@@ -4,20 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>旅遊小幫手 v3.2 (Share)</title>
-    
+    
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#FEFDF5">
-    
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+    
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght+400;500;700&family=Zen+Maru+Gothic:wght+400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght%40400;500;700&family=Zen+Maru+Gothic:wght%40400;500;700;900&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -58,14 +58,14 @@
         .inactive-tab { color: #A8A29E; }
 
         .tap-effect:active { opacity: 0.8; transform: scale(0.98); transition: transform 0.1s; }
-        
+        
         @keyframes slide-up-spring {
             0% { transform: translateY(100%); opacity: 0; }
             60% { transform: translateY(-10px); opacity: 1; }
             100% { transform: translateY(0); }
         }
         .modal-enter { animation: slide-up-spring 0.4s ease-out forwards; }
-        
+        
         button, .card-clickable { touch-action: manipulation; cursor: pointer; }
 
         .share-btn-selected { background-color: #433D3C; color: #FFFFFF; border-color: #433D3C; }
@@ -73,14 +73,13 @@
         .filter-btn-active { background-color: rgba(255,255,255,0.2); color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.4); }
         .filter-btn-inactive { color: rgba(255,255,255,0.6); }
         .weather-scroll-item { min-width: 60px; }
-        
+        
         /* 同步狀態燈號 */
         #sync-indicator {
             position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
             background: rgba(67, 61, 60, 0.9); color: white;
             padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: bold;
             z-index: 9999; backdrop-filter: blur(4px);
-            display: flex; align-items: center; gap: 6px;
             transition: opacity 0.3s, transform 0.3s;
             opacity: 0; pointer-events: none;
         }
@@ -118,7 +117,7 @@
             opacity: 1;
             z-index: 10;
         }
-        
+        
         /* Trip Card */
         .trip-card-bg-0 { background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); }
         .trip-card-bg-1 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
@@ -144,7 +143,7 @@
                 <h1 class="text-3xl font-bold text-[#433D3C] tracking-tight">My Trips ✈️</h1>
                 <p class="text-stone-400 text-sm font-bold mt-1">選擇您的旅程或建立新計畫</p>
             </div>
-            
+            
             <!-- User Profile / Login Button -->
             <div id="user-auth-area">
                 <button onclick="loginWithGoogle()" class="flex flex-col items-center gap-1 group">
@@ -186,7 +185,7 @@
                     </div>
                 </div>
             </div>
-            
+            
             <div class="text-right flex items-center gap-3">
                  <!-- Share / Save Button -->
                 <div id="share-save-area">
@@ -214,12 +213,12 @@
 
         <!-- 主要內容區 -->
         <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-28 relative px-4">
-            
+            
             <!-- Tab 1: 行程 -->
             <div id="view-schedule" class="view-section pt-2 space-y-6 animate-fade-in">
-                
+                
                 <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="day-selector"></div>
-                
+                
                 <div class="bg-white rounded-[24px] p-4 zen-shadow border border-white overflow-hidden">
                     <div class="flex items-center gap-2 mb-3 px-1">
                         <i data-lucide="cloud-sun" class="w-4 h-4 text-blue-400"></i>
@@ -263,7 +262,7 @@
                         </div>
                     </div>
                 </div>
-                
+                
                 <div class="bg-white rounded-[24px] p-6 zen-shadow mt-4">
                      <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
                         <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500"><i data-lucide="alert-circle" class="w-4 h-4"></i></div>
@@ -284,10 +283,10 @@
 
             <!-- Tab 3: 記帳 -->
             <div id="view-budget" class="view-section hidden pt-4 space-y-6 animate-fade-in">
-                
+                
                 <div class="bg-[#2D2A26] rounded-[24px] p-6 text-white zen-shadow relative overflow-hidden">
                     <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
-                    
+                    
                     <div class="flex justify-between items-start mb-4">
                         <p class="text-stone-400 text-xs font-medium tracking-wide uppercase" id="budget-title">總消費 (ALL)</p>
                         <button onclick="promptAddCompanion()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-[10px] flex items-center gap-1 backdrop-blur-sm transition-colors">
@@ -307,7 +306,7 @@
 
                     <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="member-filter-container"></div>
                 </div>
-                
+                
                 <div class="bg-white p-5 rounded-[24px] zen-shadow space-y-5 relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-stone-200 to-white"></div>
                     <h3 class="text-stone-800 font-bold text-lg flex items-center gap-2">
@@ -378,7 +377,7 @@
     </div>
 
     <!-- Modals (詳細, 編輯, 行程設定, 新增行程) -->
-    
+    
     <!-- ADD TRIP MODAL -->
     <div id="add-trip-modal" class="fixed inset-0 bg-[#433D3C]/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-[#FEFDF5] w-full max-w-sm rounded-[32px] p-6 shadow-2xl modal-enter relative">
@@ -387,7 +386,7 @@
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">旅程名稱</label><input type="text" id="new-trip-title" class="w-full bg-white rounded-2xl p-4 text-base font-bold border border-transparent focus:border-stone-200 focus:outline-none shadow-sm" placeholder="例如: 東京五日遊"></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">出發日期</label><input type="date" id="new-trip-date" class="w-full bg-white rounded-2xl p-4 text-base font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm"></div>
                 <div class="space-y-1"><label class="text-xs text-stone-500 font-bold ml-1">天數</label><input type="number" id="new-trip-days" value="3" min="1" max="30" class="w-full bg-white rounded-2xl p-4 text-base font-medium border border-transparent focus:border-stone-200 focus:outline-none shadow-sm"></div>
-                
+                
                 <div class="pt-2 flex items-center gap-2">
                     <input type="checkbox" id="use-template" class="w-4 h-4 rounded text-[#433D3C] focus:ring-[#433D3C]">
                     <label for="use-template" class="text-sm text-stone-600">使用範本 (台灣五日遊)</label>
@@ -409,6 +408,7 @@
                 <button onclick="closeShareModal()" class="flex-1 py-3 rounded-2xl bg-stone-100 text-stone-500 font-bold tap-effect">關閉</button>
             </div>
         </div>
+        <!-- Custom Confirm Modal HTML -->
     </div>
 
     <!-- EXISTING MODALS -->
@@ -461,18 +461,11 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        // --- 全局常數與狀態初始化 (修正: EXCHANGE_RATE 和費用相關變數) ---
-        // 假設 NTD/HKD 匯率約為 0.25 (1 NTD ≈ 0.25 HKD)
-        const EXCHANGE_RATE = 0.25; 
-
-        window.scheduleData = [];
-        window.expenses = [];
-        window.companions = ["我"];
-        window.currentFilter = 'ALL';
-        window.currentDayIndex = 0;
-        // ... (其餘初始化略)
+        // 匯率 (NTD to HKD) - 由於這裡沒有 API，使用一個靜態值
+        const EXCHANGE_RATE = 0.25; // 假設 1 TWD ≈ 0.25 HKD
 
         // 1. Setup Firebase using environment config
+        // NOTE: The provided config is hardcoded. In a real environment, it would come from __firebase_config.
         const firebaseConfig = {
             apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw", // 您的 API Key
             authDomain: "mytaiwantrip-603c6.firebaseapp.com",
@@ -485,14 +478,19 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-        
+        
         // 2. Use __app_id for environment consistency
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'travel_app_v2';
         let currentUser = null;
-        
+        
         // Multi-Trip State
         window.tripsList = [];
         let tripUnsubscribes = []; // To store listeners and detach them when switching trips
+        window.currentDayIndex = 0;
+        window.currentFilter = 'ALL';
+        window.companions = ["我"];
+        window.expenses = [];
+
 
         // New Global Trip Context
         window.currentTrip = {
@@ -502,14 +500,14 @@
             creatorId: null, // The original creator's UID (only for shared trips)
             meta: {} // Stores the trip metadata (title, days, startDate)
         };
-        
+        
         // --- Firestore Path Helper ---
         // Modified to accept a forcePublic flag
         function getTripDocRef(tripId, collectionName, forcePublic = false) {
             const currentContext = window.currentTrip;
             const docName = `${tripId}_${collectionName}`;
-            
-            // Check if we are in shared mode OR if we are forcing a public read (for initial metadata load)
+            
+            // Check if we are in shared mode OR if we are forcing a public read (for initial metadata load/publishing)
             if (currentContext.isShared || forcePublic) {
                 // Public/Shared Path: artifacts/{appId}/public/data/shared_trips/{sharedId}_{collectionName}
                 return doc(db, 'artifacts', appId, 'public', 'data', 'shared_trips', docName);
@@ -530,22 +528,31 @@
                 console.warn("No trip selected, skipping save");
                 return;
             }
-            
+            
             try {
                 showSyncing();
+                // Check if we are in private mode but the trip has a sharedId (i.e., we are the owner but viewing privately)
+                // If so, we should update BOTH private and public copies of the data for consistency
+                if (!window.currentTrip.isShared && window.currentTrip.sharedId) {
+                    // Save to Public (Shared) copy
+                    const publicDocRef = getTripDocRef(window.currentTrip.sharedId, type, true);
+                    await setDoc(publicDocRef, { items: data, lastUpdated: new Date().toISOString() });
+                }
+                
+                // Save to Private or Public (depending on isShared status)
                 const docRef = getTripDocRef(window.currentTrip.id, type);
-                // Store data in Firebase using setDoc
                 await setDoc(docRef, { items: data, lastUpdated: new Date().toISOString() });
+                
                 showSaved();
             } catch (e) { 
                 console.error("Sync error:", e); 
                 showError();
             }
         };
-        
+        
         // Save Trip Index List (Always Private)
         window.saveTripsIndex = async (trips) => {
-             if (!currentUser) return;
+             if (!currentUser || currentUser.isAnonymous) return; // Only save index for signed-in users
              try {
                  showSyncing();
                  const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'travel_data', 'trips_index');
@@ -556,10 +563,10 @@
                  showError();
              }
         }
-        
+        
         // Save Trip Meta Data (Always Private)
         window.saveTripMeta = async (tripId, meta) => {
-            if (!currentUser) return;
+            if (!currentUser || currentUser.isAnonymous) return;
             try {
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'travel_data', `${tripId}_meta`);
                 await setDoc(docRef, meta);
@@ -610,22 +617,25 @@
         // 4. Initialize Auth & Listeners
         async function initFirebase() {
             try {
-                // Initial Auth Check
+                // Initial Auth Check (Custom Token from Canvas)
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    // Fallback to anonymous sign-in
+                    await signInAnonymously(auth);
                 }
-                
+                
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUser = user;
                         updateAuthUI(user);
-                        statusText.innerText = user.isAnonymous ? "Guest Mode" : (user.displayName || "User");
+                        statusText.innerText = user.isAnonymous ? "Guest Mode" : (user.displayName || user.uid.substring(0, 4));
                         statusDot.classList.replace('bg-gray-300', 'bg-green-400');
-                        
+                        
                         // Load list OR shared trip from URL
                         const urlParams = new URLSearchParams(window.location.search);
                         const sharedTripId = urlParams.get('share');
-                        
+                        
                         if (sharedTripId) {
                             await loadSharedTrip(sharedTripId);
                             // If shared trip is loaded, we skip loadTripList/routing below
@@ -635,18 +645,20 @@
                         // Load trip list and handle private deep-linking inside the snapshot listener
                         loadTripList(user.uid);
                     } else {
-                        // If user logs out or no token, sign in anonymously for immediate usage/sharing
-                        await signInAnonymously(auth);
+                        // Should not happen often if we sign in anonymously above, but as a fallback:
+                        statusText.innerText = "Offline";
+                        statusDot.classList.replace('bg-gray-300', 'bg-red-400');
+                        loadTripList('anonymous'); // Still try to load/render trips for anonymous user
                     }
                 });
 
             } catch (e) { 
-                console.error("Auth error:", e); 
-                statusText.innerText = "Offline";
+                console.error("Auth/Init error:", e); 
+                statusText.innerText = "Error";
                 statusDot.classList.replace('bg-gray-300', 'bg-red-400');
             }
         }
-        
+        
         // Google Auth Functions (Same as before)
         window.loginWithGoogle = async () => {
             try {
@@ -654,21 +666,23 @@
             } catch (error) {
                 console.error("Google login failed", error);
                 if(error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-this-environment') {
-                    // Cannot use alert(), using custom toast/message
                     showToast("⚠️ 登入受限: 請在瀏覽器中運行程式碼。");
                 } else {
                     showToast("登入失敗: " + error.message);
                 }
             }
         }
-        
+        
         window.logoutGoogle = async () => {
             // Using custom confirm/modal logic (since alert is banned)
             showCustomConfirm('確定要登出嗎？', async () => {
                  await signOut(auth);
+                 // Force re-initialization as anonymous
+                 await signInAnonymously(auth);
+                 backToTripList();
             });
         }
-        
+        
         function updateAuthUI(user) {
             const container = document.getElementById('user-auth-area');
             if (user.isAnonymous) {
@@ -695,8 +709,15 @@
 
         // 5. Load Trip List (Modified to handle private deep-linking)
         function loadTripList(uid) {
+            // Only fetch user's own list if they are authenticated (not anonymous)
+            if (uid === 'anonymous' || auth.currentUser.isAnonymous) {
+                window.tripsList = [];
+                window.renderTripListUI();
+                return;
+            }
+            
             const indexRef = doc(db, 'artifacts', appId, 'users', uid, 'travel_data', 'trips_index');
-            
+            
             onSnapshot(indexRef, (docSnap) => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const privateTripId = urlParams.get('id'); // NEW: Check for private ID
@@ -719,7 +740,7 @@
                          history.pushState(null, '', window.location.pathname);
                     }
                 }
-                
+                
                 // Ensure default view (trip list) is active if no trip is loaded
                 if (window.currentTrip.id === null) {
                     document.getElementById('view-trip-list').classList.add('page-active');
@@ -727,13 +748,13 @@
                 }
             });
         }
-        
+        
         // 6. Load Shared Trip (New functionality)
         window.loadSharedTrip = async function(sharedTripId) {
             // FIX: Pass true to getTripDocRef to force reading from the public path for metadata
             const metaRef = getTripDocRef(sharedTripId, 'meta', true);
             const metaSnap = await getDoc(metaRef);
-            
+            
             if (!metaSnap.exists()) {
                 window.showToast("分享的行程不存在或已被移除。");
                 backToTripList(); // Go back to the trip list page
@@ -744,31 +765,31 @@
 
             // Set Global State for shared trip
             window.currentTrip = {
-                id: sharedTripId,
+                id: sharedTripId, // In shared mode, the ID of the document being viewed is the shared ID
                 sharedId: sharedTripId,
                 isShared: true,
                 creatorId: meta.creatorId,
                 meta: meta
             };
-            
+            
             // Update URL to reflect the shared ID
             history.pushState(null, '', `${window.location.pathname}?share=${sharedTripId}`);
 
             // Update UI
             document.getElementById('header-title').innerText = meta.title;
             document.getElementById('header-subtitle').innerText = "SHARED TRIP";
-            
+            
             // Show Save/Share buttons based on context
             const isCreator = currentUser && currentUser.uid === meta.creatorId;
             document.getElementById('share-button').classList.toggle('hidden', !isCreator);
             document.getElementById('save-button').classList.toggle('hidden', isCreator);
-            
+            
             // Switch View
             document.getElementById('view-trip-list').classList.remove('page-active');
             document.getElementById('view-trip-list').classList.add('page-hidden');
             document.getElementById('view-trip-detail').classList.remove('page-hidden');
             document.getElementById('view-trip-detail').classList.add('page-active');
-            
+            
             // Start listening on public paths
             // Note: startTripListeners will now use the correct public path because currentTrip.isShared is true
             window.startTripListeners(sharedTripId);
@@ -779,12 +800,12 @@
             // Unsubscribe previous listeners
             tripUnsubscribes.forEach(unsub => unsub());
             tripUnsubscribes = [];
-            
+            
             const types = ['schedule', 'expenses', 'companions'];
-            
+            
             types.forEach(type => {
                 const docRef = getTripDocRef(tripId, type);
-                
+                
                 const unsub = onSnapshot(docRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data().items;
@@ -794,7 +815,7 @@
                             window.renderTimeline(window.currentDayIndex);
                         } else if(type === 'expenses') {
                             window.expenses = data;
-                            window.renderExpenses(); // Re-render expenses on update
+                            window.renderExpenses();
                         } else if(type === 'companions') {
                             window.companions = data;
                             window.updatePayerSelect();
@@ -803,22 +824,19 @@
                         }
                     } else {
                         // Initialize with defaults if doc doesn't exist
-                        if(type === 'schedule') { window.scheduleData = []; window.renderDaySelector(); } 
-                        if(type === 'expenses') { window.expenses = []; window.renderExpenses(); }
-                        if(type === 'companions') { window.companions = ["我"]; window.updatePayerSelect(); window.renderShareButtons(); window.renderFilter(); }
+                        if(type === 'schedule') window.scheduleData = []; 
+                        if(type === 'expenses') window.expenses = [];
+                        // Only initialize companions if it's the owner/private view and the list is completely empty
+                        if(type === 'companions' && !docSnap.exists()) window.companions = ["我"];
                     }
                     // For the main trip, we also need to update its local metadata if it's not a shared trip
                     if (!window.currentTrip.isShared && type === 'schedule' && window.scheduleData.length > 0) {
                         const trip = window.tripsList.find(t => t.id === tripId);
                         if (trip && trip.days !== window.scheduleData.length) {
                              trip.days = window.scheduleData.length;
-                             // Check if scheduleData[0] exists before accessing month/date
+                             // Check if scheduleData[0] exists before accessing its properties
                              if (window.scheduleData[0] && window.scheduleData[0].month) {
-                                 // Note: The template data uses M/D, but the input uses YYYY-MM-DD. 
-                                 // This path is just for fixing the days count, meta update needs to be safe.
-                                 // We rely on updateTravelDates to keep meta correct for new trips.
-                                 // Leaving old logic for backward compatibility in index update, but not updating startDate here to avoid complexity.
-                                 // trip.startDate = `${window.scheduleData[0].month}/${window.scheduleData[0].date}`;
+                                trip.startDate = `${window.scheduleData[0].month}/${window.scheduleData[0].date}`;
                              }
                              window.saveTripsIndex(window.tripsList);
                         }
@@ -826,45 +844,46 @@
                 }, (error) => {
                     console.error(`Read error (${type}):`, error);
                 });
-                
+                
                 tripUnsubscribes.push(unsub);
             });
         }
         
+        // Modified to handle routing for bookmarked shared trips
         window.openTrip = function(tripId) {
             const trip = window.tripsList.find(t => t.id === tripId);
             if (!trip) return;
-            
+            
             // NEW LOGIC: If the trip is flagged as a shared bookmark, load it as a shared trip
             if (trip.isShared) {
-                // The ID is the shared ID (trip.id === trip.sharedId), load as shared trip
-                loadSharedTrip(tripId); 
+                // The ID in the tripsList is the shared ID (trip.id === trip.sharedId), load as shared trip
+                loadSharedTrip(trip.id); 
                 return;
             }
 
             // 1. Set State (Private context)
             window.currentTrip = {
                 id: tripId,
-                sharedId: trip.sharedId || null, // Preserve sharedId if it exists in the index
+                sharedId: trip.sharedId || null, // Preserve sharedId if it exists in the index (owner)
                 isShared: false,
                 creatorId: trip.creatorId || currentUser?.uid,
                 meta: trip
             };
-            
+            
             // 2. Update UI
             document.getElementById('header-title').innerText = trip.title;
             document.getElementById('header-subtitle').innerText = "TRIP";
-            
+            
             // Always show the Share button for owner's trips.
             document.getElementById('share-button').classList.remove('hidden');
             document.getElementById('save-button').classList.add('hidden');
-            
+            
             // 3. Start Listeners
             window.startTripListeners(tripId);
 
             // 4. Update URL for deep linking
             history.pushState(null, '', `${window.location.pathname}?id=${tripId}`);
-            
+            
             // 5. Switch View
             document.getElementById('view-trip-list').classList.remove('page-active');
             document.getElementById('view-trip-list').classList.add('page-hidden');
@@ -873,32 +892,38 @@
         }
 
         window.backToTripList = function() {
+             // Unsubscribe all listeners when leaving the trip detail view
+             tripUnsubscribes.forEach(unsub => unsub());
+             tripUnsubscribes = [];
+
              // Reset URL
              history.pushState(null, '', window.location.pathname);
-            
+            
             // Reset Trip Context
             window.currentTrip = { id: null, sharedId: null, isShared: false, creatorId: null, meta: {} };
-            
+            
             // Remove Share/Save buttons
             document.getElementById('share-button').classList.add('hidden');
             document.getElementById('save-button').classList.add('hidden');
-            
+            
             document.getElementById('view-trip-detail').classList.remove('page-active');
             document.getElementById('view-trip-detail').classList.add('page-hidden');
             document.getElementById('view-trip-list').classList.remove('page-hidden');
             document.getElementById('view-trip-list').classList.add('page-active');
         }
-        
+        
         // --- Sharing Functionality (NEW) ---
         const shareModal = document.getElementById('share-modal');
         const shareContent = document.getElementById('share-content');
 
         window.openShareModal = function() { 
             if (!window.currentTrip.id) return showToast("請先選擇一個行程");
-            
-            // If the trip hasn't been shared yet, we publish it now.
-            if (!window.currentTrip.meta.isShared) {
+            
+            // If not shared yet, check if it was shared before
+            if (!window.currentTrip.meta.isShared && !window.currentTrip.sharedId) {
                 publishTripForSharing();
+            } else if (window.currentTrip.sharedId) {
+                renderShareLink(window.currentTrip.sharedId);
             } else {
                 renderShareLink(window.currentTrip.id);
             }
@@ -909,63 +934,73 @@
         shareModal.addEventListener('click', (e) => { if (e.target === shareModal) closeShareModal(); });
 
         async function publishTripForSharing() {
-            if (!currentUser) return showToast("請先登入才能分享行程");
-            
+            if (!currentUser || currentUser.isAnonymous) return showToast("請先登入 Google 才能發布行程進行協作。");
+            
             const tripId = window.currentTrip.id;
             const meta = window.currentTrip.meta;
+            const sharedId = tripId; // Use the private ID as the shared ID
 
-            // 1. Prepare shared data structure (including meta and all content)
+            // 1. Prepare shared metadata
             const sharedMeta = {
                 ...meta,
                 creatorId: currentUser.uid,
                 isShared: true,
                 createdAt: meta.createdAt || new Date().toISOString()
             };
-            
+            
             // 2. Copy data from Private to Public path
             showSyncing();
-            
-            // Save Metadata (This is the "master" switch for the public doc)
-            // Use getTripDocRef with forcePublic: true to save to the public path
-            const metaRef = getTripDocRef(tripId, 'meta', true);
-            await setDoc(metaRef, sharedMeta);
-            
-            // Temporary manual override to ensure saveToFirestore writes to public path
-            const originalIsShared = window.currentTrip.isShared;
-            window.currentTrip.isShared = true; // Temporary context switch for saving
-            window.currentTrip.sharedId = tripId;
-            
-            await window.saveToFirestore('schedule', window.scheduleData);
-            await window.saveToFirestore('expenses', window.expenses);
-            await window.saveToFirestore('companions', window.companions);
-            
-            // Restore context
-            window.currentTrip.isShared = originalIsShared; 
-            
-            showSaved();
-            window.showToast("✅ 行程已成功發布為協作模式！");
+            
+            try {
+                // Save Metadata (to public path)
+                const metaRef = getTripDocRef(sharedId, 'meta', true);
+                await setDoc(metaRef, sharedMeta);
+                
+                // Save current data to Public path (Force Public: true)
+                const publicScheduleRef = getTripDocRef(sharedId, 'schedule', true);
+                await setDoc(publicScheduleRef, { items: window.scheduleData, lastUpdated: new Date().toISOString() });
+                
+                const publicExpensesRef = getTripDocRef(sharedId, 'expenses', true);
+                await setDoc(publicExpensesRef, { items: window.expenses, lastUpdated: new Date().toISOString() });
+                
+                const publicCompanionsRef = getTripDocRef(sharedId, 'companions', true);
+                await setDoc(publicCompanionsRef, { items: window.companions, lastUpdated: new Date().toISOString() });
+                
+                showSaved();
+                window.showToast("✅ 行程已成功發布為協作模式！");
 
-            // 3. Update local index (for owner)
-            const tripIndex = window.tripsList.findIndex(t => t.id === tripId);
-            if (tripIndex !== -1) {
-                window.tripsList[tripIndex].isShared = true;
-                window.tripsList[tripIndex].sharedId = tripId;
-                window.tripsList[tripIndex].creatorId = currentUser.uid;
-                await window.saveTripsIndex(window.tripsList);
+                // 3. Update local index (for owner)
+                const tripIndex = window.tripsList.findIndex(t => t.id === tripId);
+                if (tripIndex !== -1) {
+                    window.tripsList[tripIndex].isShared = true;
+                    window.tripsList[tripIndex].sharedId = sharedId;
+                    window.tripsList[tripIndex].creatorId = currentUser.uid;
+                    await window.saveTripsIndex(window.tripsList);
+                }
+                
+                // 4. Update current context and listeners to read/write from the public path
+                window.currentTrip.meta = sharedMeta;
+                window.currentTrip.sharedId = sharedId;
+                window.currentTrip.isShared = true;
+                window.startTripListeners(sharedId); // Restart listeners to point to public path
+
+                // 5. Update UI and render link
+                document.getElementById('header-subtitle').innerText = "SHARED TRIP";
+                document.getElementById('share-button').classList.remove('hidden');
+                document.getElementById('save-button').classList.add('hidden');
+                renderShareLink(sharedId);
+                
+                // Crucial: Update URL to reflect the new shared state
+                history.pushState(null, '', `${window.location.pathname}?share=${sharedId}`);
+            } catch (e) {
+                console.error("Publish error:", e);
+                showError("發布失敗，請重試。");
             }
-            
-            // 4. Update UI
-            window.currentTrip.meta = sharedMeta;
-            window.currentTrip.sharedId = tripId;
-            renderShareLink(tripId);
-            
-            // Crucial: Update URL to reflect the new shared state
-            history.pushState(null, '', `${window.location.pathname}?share=${tripId}`);
         }
 
         function renderShareLink(tripId) {
             const shareLink = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
-            
+            
             shareContent.innerHTML = `
                 <div class="bg-stone-100 p-4 rounded-xl flex flex-col gap-2 mb-4">
                     <p class="text-xs text-stone-500 font-bold uppercase">協作連結</p>
@@ -982,7 +1017,7 @@
             `;
             lucide.createIcons();
         }
-        
+        
         window.copyShareLink = function(link) {
             // Using document.execCommand('copy') for better iframe compatibility
             const el = document.createElement('textarea');
@@ -997,18 +1032,19 @@
 
         // --- Forking Functionality (NEW - Modified to be Collaborative Bookmark) ---
         window.forkSharedTrip = async function() {
-            if (!currentUser) return showToast("請先登入或註冊才能儲存行程！");
+            // Only allow saving if user is signed in (not anonymous)
+            if (!currentUser || currentUser.isAnonymous) return showToast("請先登入才能儲存行程！");
             if (!window.currentTrip.isShared) return; // Safety check
 
             const sharedId = window.currentTrip.id;
-            
+            
             // Check if the trip is already saved in the private list (as a bookmark)
-            if (window.tripsList.some(t => t.sharedId === sharedId && t.isShared)) {
+            if (window.tripsList.some(t => t.id === sharedId && t.isShared)) {
                  return window.showToast("此協作行程已儲存到您的計畫中。");
             }
-            
+            
             showCustomConfirm(`確定要將「${window.currentTrip.meta.title}」儲存為協作連結到您的計畫中嗎？`, async () => {
-                
+                
                 // 1. Create the new Private Metadata (This is just a pointer/bookmark)
                 const newTripMeta = {
                     // We use the shared ID as the 'id' in the user's list for simple retrieval, 
@@ -1022,19 +1058,20 @@
                     creatorId: window.currentTrip.creatorId,
                     bookmarkedAt: new Date().toISOString()
                 };
-                
+                
                 // 2. Update User's Trip Index (Always Private)
                 showSyncing();
                 window.tripsList.push(newTripMeta);
                 await window.saveTripsIndex(window.tripsList);
-                
+                
                 showSaved();
                 window.showToast(`✅ 已將行程「${newTripMeta.title}」儲存為協作連結！`);
-                
+                
                 // Stay on the shared view (URL remains ?share={id})
+                document.getElementById('save-button').classList.add('hidden'); // Hide save button after saving
             });
         }
-        
+        
         // --- Custom Confirm Modal (Since alert/confirm is banned) ---
         function showCustomConfirm(message, onConfirm) {
             const modalHtml = `
@@ -1053,16 +1090,16 @@
             document.body.appendChild(wrapper);
 
             const modal = document.getElementById('custom-confirm-modal');
-            
+            
             document.getElementById('confirm-cancel').onclick = () => { modal.remove(); };
             document.getElementById('confirm-ok').onclick = () => { onConfirm(); modal.remove(); };
-            
+            
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
         }
 
 
         // --- Other Logic (Kept as before, updated save calls to use global context) ---
-        
+        
         // Load List UI (Same as before)
         window.renderTripListUI = function() {
             const container = document.getElementById('trip-list-container');
@@ -1080,6 +1117,7 @@
                 container.innerHTML = window.tripsList.map((trip, idx) => {
                     const days = trip.days || '?';
                     const bgClass = `trip-card-bg-${idx % 4}`;
+                    // Check if the trip is a shared bookmark or the owner's shared trip
                     const isSharedText = trip.isShared ? `<div class="text-[10px] font-bold text-white/80 bg-black/20 px-2 py-0.5 rounded-full absolute top-3 left-3 flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> 協作</div>` : '';
                     return `
                         <div onclick="openTrip('${trip.id}')" class="relative group w-full ${bgClass} rounded-[24px] p-6 shadow-lg transform transition-all tap-effect overflow-hidden cursor-pointer min-h-[140px] flex flex-col justify-between">
@@ -1089,14 +1127,14 @@
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
-                            
+                            
                             <div>
                                 <h3 class="text-2xl font-bold text-white mb-1 drop-shadow-sm leading-tight">${trip.title}</h3>
                                 <div class="flex items-center gap-2 text-white/90 text-xs font-bold bg-black/10 w-fit px-2 py-1 rounded-lg backdrop-blur-sm">
                                     <i data-lucide="calendar" class="w-3 h-3"></i> ${trip.startDate}
                                 </div>
                             </div>
-                            
+                            
                             <div class="flex items-end justify-between mt-4">
                                 <div class="flex -space-x-2">
                                      <div class="w-8 h-8 rounded-full bg-white/90 border-2 border-white flex items-center justify-center text-xs font-bold text-stone-500">我</div>
@@ -1114,15 +1152,15 @@
         const addTripModal = document.getElementById('add-trip-modal');
         window.openAddTripModal = function() { addTripModal.classList.remove('hidden'); }
         window.closeAddTripModal = function() { addTripModal.classList.add('hidden'); }
-        
+        
         window.confirmAddTrip = async function() {
             const title = document.getElementById('new-trip-title').value;
             const startDate = document.getElementById('new-trip-date').value;
             const days = parseInt(document.getElementById('new-trip-days').value);
             const useTemplate = document.getElementById('use-template').checked;
-            
+            
             if(!title || !startDate) return window.showToast("請填寫完整資訊");
-            
+            
             const newId = 'trip_' + Date.now();
             const newTripMeta = {
                 id: newId,
@@ -1133,19 +1171,19 @@
                 creatorId: currentUser?.uid || 'anonymous',
                 createdAt: new Date().toISOString()
             };
-            
+            
             // 1. Prepare Initial Schedule Data
             let initialSchedule = [];
             const start = new Date(startDate.replace(/-/g, '/')); // Fix Safari date parsing
             for(let i=0; i<days; i++) {
                 const dt = new Date(start);
                 dt.setDate(start.getDate()+i);
-                
+                
                 let items = [];
                 if (useTemplate && window.templateScheduleData[i]) {
                     items = window.templateScheduleData[i].items;
                 }
-                
+                
                 initialSchedule.push({
                     date: dt.getDate(),
                     month: dt.getMonth() + 1,
@@ -1153,68 +1191,66 @@
                     items: items
                 });
             }
-            
+            
             // 2. Update Local State & UI immediately (Optimistic)
             window.tripsList.push(newTripMeta);
             window.renderTripListUI();
             closeAddTripModal();
-            
+            
             // 3. Save to Private Paths
             const prevContext = { ...window.currentTrip };
             window.currentTrip = { id: newId, isShared: false, meta: newTripMeta };
-            
+            
             await window.saveTripMeta(newId, newTripMeta);
             await window.saveToFirestore('schedule', initialSchedule);
             await window.saveToFirestore('expenses', []);
             await window.saveToFirestore('companions', ["我"]);
-            
+            
             window.currentTrip = prevContext; // Reset context
             await window.saveTripsIndex(window.tripsList);
-            
+            
             // 4. Open it
             openTrip(newId);
         }
-        
+        
         window.deleteTrip = async function(tripId) {
-            showCustomConfirm("確定要刪除這個旅程嗎？此操作無法復原。", async () => {
+            // Check if the trip is currently active and redirect if so
+            if (window.currentTrip.id === tripId) {
+                backToTripList();
+            }
+
+            showCustomConfirm("確定要刪除這個旅程嗎？此操作只會移除您列表中的連結或私人資料，無法復原。", async () => {
                  window.tripsList = window.tripsList.filter(t => t.id !== tripId);
                  window.renderTripListUI();
                  await window.saveTripsIndex(window.tripsList);
-                 window.showToast("行程已移除");
+                 // NOTE: This version does NOT delete the actual private or public documents.
+                 // It only removes the reference from the user's index (trips_index).
+                 window.showToast("行程已從您的列表中移除");
             });
         }
-        
+        
         // --- Core Logic (Scheduled Data & Budgeting) ---
-        
-        // Logic for rendering day selector, timeline, expenses, and modals remain largely the same, 
-        // as they rely on the global state (window.scheduleData, window.expenses) 
-        // and the save functions already use the new dynamic path logic.
-
-        // Initialize Call
-        // initFirebase(); // Moved to end of script
-
-        // --- Remaining Helper Functions (No major changes required, just context) ---
 
         window.renderDaySelector = function() { 
             const c = document.getElementById('day-selector'); 
             if (!window.scheduleData || window.scheduleData.length === 0) {
                  c.innerHTML = ""; return;
             }
-            
+            
             if (window.currentDayIndex >= window.scheduleData.length) {
                  window.currentDayIndex = 0;
             }
 
             c.innerHTML = window.scheduleData.map((d, i) => `<button onclick="selectDay(${i})" class="day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${i===window.currentDayIndex?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200':'bg-white text-stone-300'}"><span class="text-[10px] font-bold tracking-wide opacity-80">${d.day}</span><span class="text-xl font-bold font-mono mt-1">${d.month}/${d.date}</span></button>`).join(''); 
         }
-        
+        
         window.selectDay = function(i) { 
             window.currentDayIndex = i; 
             document.querySelectorAll('.day-btn').forEach((b, idx) => { b.className = `day-btn flex-shrink-0 flex flex-col items-center justify-center w-[60px] h-[72px] rounded-2xl transition-all border border-transparent tap-effect ${idx===i?'bg-[#433D3C] text-[#FEFDF5] shadow-lg shadow-stone-200 transform scale-105':'bg-white text-stone-300'}`; }); 
             window.renderTimeline(i);
             generateHourlyWeather(); 
         }
-        
+        
         window.renderTimeline = function(i) { 
             const c = document.getElementById('timeline-container'); 
             if (!window.scheduleData[i]) {
@@ -1224,7 +1260,7 @@
             const d = window.scheduleData[i];
             if (!d.items) d.items = [];
             d.items.sort((a,b)=>a.time.localeCompare(b.time));
-            
+            
             let html = d.items.map((item, idx) => {
                 let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin';
                 let color = item.type==='food'?'text-orange-500 bg-orange-50':item.type==='transport'?'text-blue-500 bg-blue-50':item.type==='shop'?'text-pink-500 bg-pink-50':item.type==='stay'?'text-purple-500 bg-purple-50':'text-stone-500 bg-stone-100';
@@ -1241,145 +1277,90 @@
 
         window.setFilter = function(name) { window.currentFilter = name; window.renderExpenses(); }
         window.renderFilter = function() { const c = document.getElementById('member-filter-container'); let h = `<button onclick="setFilter('ALL')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === 'ALL' ? 'filter-btn-active' : 'filter-btn-inactive'}">全體</button>`; window.companions.forEach(n => { h += `<button onclick="setFilter('${n}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs transition-all ${window.currentFilter === n ? 'filter-btn-active' : 'filter-btn-inactive'}">${n}</button>`; }); c.innerHTML = h; }
-        
-        // --- 修正後的費用渲染邏輯 (Fix: Filtering and Calculation) ---
+        
         window.renderExpenses = function() {
             const list = document.getElementById('expense-list');
             const totalTwdEl = document.getElementById('total-expense-twd');
             const totalHkdEl = document.getElementById('total-expense-hkd');
             const titleEl = document.getElementById('budget-title');
             const listStatusEl = document.getElementById('list-filter-status');
-            
-            let displayExpenses = []; 
-            let totalTWD = 0;
-            
-            // 1. Filter and Calculate Total
+            let displayExpenses = []; let totalTWD = 0;
+            
             if (window.currentFilter === 'ALL') { 
-                displayExpenses = window.expenses; 
-                titleEl.innerText = "總消費 (ALL)"; 
-                listStatusEl.innerText = "顯示全部"; 
-                // 計算所有支出的總和
-                totalTWD = window.expenses.reduce((sum, ex) => sum + (parseInt(ex.amount) || 0), 0);
+                displayExpenses = window.expenses; titleEl.innerText = "總消費 (ALL)"; listStatusEl.innerText = "顯示全部"; 
+                totalTWD = window.expenses.reduce((sum, ex) => sum + parseInt(ex.amount), 0);
             } else { 
-                titleEl.innerText = `個人消費 (${window.currentFilter})`; 
-                listStatusEl.innerText = `只顯示 ${window.currentFilter} 的分攤項目`; 
-                
-                // 修正: 篩選出包含當前旅伴的支出
-                displayExpenses = window.expenses.filter(ex => ex.sharedBy && ex.sharedBy.includes(window.currentFilter)); 
-                
-                // 計算個人應分攤的總和
+                titleEl.innerText = `個人消費 (${window.currentFilter})`; listStatusEl.innerText = `只顯示 ${window.currentFilter} 的分攤項目`; 
+                
+                // FIX: Correctly filter by checking if the current filter/user is in the sharedBy array (which holds names)
+                displayExpenses = window.expenses.filter(ex => ex.sharedBy && ex.sharedBy.includes(window.currentFilter));
+                
+                // FIX: Calculate the sum of the divided amounts for the current user based on the correctly filtered list
                 totalTWD = displayExpenses.reduce((sum, ex) => { 
-                    const fullAmount = parseInt(ex.amount) || 0;
-                    const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1;
-                    return sum + (fullAmount / sharersCount); 
+                    const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1; 
+                    return sum + (parseInt(ex.amount) / sharersCount); 
                 }, 0); 
             }
             
-            // 2. Render List
             list.innerHTML = displayExpenses.map((ex, i) => {
                 const originalIndex = window.expenses.indexOf(ex);
-                const fullAmount = parseInt(ex.amount) || 0;
-                
-                let displayAmount = fullAmount; 
-                let displayLabel = "總額"; 
-                let detailText = ""; 
-                let amountClass = "text-stone-800";
-                
-                const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1;
-
+                const fullAmount = parseInt(ex.amount);
+                let displayAmount = fullAmount; let displayLabel = "總額"; let detailText = ""; let amountClass = "text-stone-800";
+                const sharersCount = (ex.sharedBy && ex.sharedBy.length > 0) ? ex.sharedBy.length : 1; // Calculate sharer count here
+                
                 if (window.currentFilter !== 'ALL') { 
                     displayAmount = fullAmount / sharersCount; 
                     displayLabel = "應付"; 
                     detailText = `(總額 $${fullAmount} ÷ ${sharersCount}人)`; 
                     amountClass = "text-blue-600"; 
                 }
-                
-                const amountHKD = Math.round(displayAmount * EXCHANGE_RATE); 
-                const amountTWD = Math.round(displayAmount);
-                
-                const payer = ex.payer || "我"; 
-                const sharedBy = ex.sharedBy || ["我"]; 
-                const shareText = sharedBy.length === window.companions.length ? "全員" : sharedBy.join(",");
-                
-                return `<div class="flex flex-col bg-white p-4 rounded-[20px] shadow-sm border border-stone-100">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="text-base font-bold text-stone-700 block">${ex.item}</span>
-                            <span class="text-[10px] text-stone-400">由 ${payer} 先付 • 分攤: ${shareText}</span>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-[10px] text-stone-300 font-bold mb-0.5 text-right">${displayLabel}</div>
-                            <div class="font-mono font-bold ${amountClass} text-lg">NT$ ${amountTWD.toLocaleString()}</div>
-                            <div class="font-mono text-xs text-stone-400">≈ HK$ ${amountHKD.toLocaleString()}</div>
-                            ${detailText ? `<div class="text-[10px] text-stone-400 mt-0.5">${detailText}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex justify-end border-t border-stone-50 pt-2 mt-1">
-                        <button onclick="deleteExpense(${originalIndex})" class="text-xs text-stone-300 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded tap-effect">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i> 刪除
-                        </button>
-                    </div>
-                </div>`;
+                const amountHKD = Math.round(displayAmount * EXCHANGE_RATE); const amountTWD = Math.round(displayAmount);
+                const payer = ex.payer || "我"; const sharedBy = ex.sharedBy || ["我"]; const shareText = sharedBy.length === window.companions.length ? "全員" : sharedBy.join(",");
+                return `<div class="flex flex-col bg-white p-4 rounded-[20px] shadow-sm border border-stone-100"><div class="flex justify-between items-start mb-2"><div><span class="text-base font-bold text-stone-700 block">${ex.item}</span><span class="text-[10px] text-stone-400">由 ${payer} 先付 • 分攤: ${shareText}</span></div><div class="text-right"><div class="text-[10px] text-stone-300 font-bold mb-0.5 text-right">${displayLabel}</div><div class="font-mono font-bold ${amountClass} text-lg">NT$ ${amountTWD}</div><div class="font-mono text-xs text-stone-400">≈ HK$ ${amountHKD}</div>${detailText ? `<div class="text-[10px] text-stone-400 mt-0.5">${detailText}</div>` : ''}</div></div><div class="flex justify-end border-t border-stone-50 pt-2 mt-1"><button onclick="deleteExpense(${originalIndex})" class="text-xs text-stone-300 hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded tap-effect"><i data-lucide="trash-2" class="w-3 h-3"></i> 刪除</button></div></div>`;
             }).reverse().join('') || `<div class="text-center text-stone-300 text-sm py-8">沒有相關紀錄</div>`;
-            
-            // 3. Update Totals in Header
-            totalTwdEl.innerText = Math.round(totalTWD).toLocaleString(); 
-            totalHkdEl.innerText = Math.round(totalTWD * EXCHANGE_RATE).toLocaleString();
-            
-            window.renderFilter(); 
-            lucide.createIcons();
+            totalTwdEl.innerText = Math.round(totalTWD).toLocaleString(); totalHkdEl.innerText = Math.round(totalTWD * EXCHANGE_RATE).toLocaleString();
+            window.renderFilter(); lucide.createIcons();
         }
 
-        window.addExpense = function() { 
-            const item = document.getElementById('expense-item').value; 
-            // 確保金額被視為數字，並處理空值
-            const amount = document.getElementById('expense-amount').value.trim(); 
-            const parsedAmount = parseInt(amount) || 0;
-            
-            const payer = document.getElementById('expense-payer').value; 
-            const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); 
-            const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); 
-            
-            if(!item || parsedAmount <= 0) { 
-                window.showToast("請輸入項目和有效金額"); 
-                return; 
+        window.addExpense = function() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount) { window.showToast("請輸入項目和金額"); return; } if(sharedBy.length === 0) { window.showToast("請至少選擇一位分攤對象"); return; } window.expenses.push({ item, amount, payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; window.saveToFirestore('expenses', window.expenses); }
+        window.deleteExpense = function(index) { showCustomConfirm('確定刪除這筆紀錄？', () => { window.expenses.splice(index, 1); window.saveToFirestore('expenses', window.expenses); }); }
+        
+        window.promptAddCompanion = function() { 
+            // Using prompt for simplicity, replace with custom modal if needed
+            const name = prompt("請輸入旅伴名字："); 
+            if (name && name.trim() !== "") { 
+                if (!window.companions.includes(name.trim())) { 
+                    window.companions.push(name.trim()); 
+                    window.saveToFirestore('companions', window.companions); 
+                } else { 
+                    window.showToast("已經在名單內囉！"); 
+                } 
             } 
-            if(sharedBy.length === 0) { 
-                window.showToast("請至少選擇一位分攤對象"); 
-                return; 
-            } 
-            
-            // 存儲時依然存儲為字符串，但檢查了其有效性
-            window.expenses.push({ 
-                item, 
-                amount: parsedAmount.toString(), // 存回字串以保持結構，但確保是有效數字
-                payer, 
-                sharedBy,
-                timestamp: new Date().toISOString() // 增加時間戳方便排序
-            }); 
-            
-            // 清空輸入框
-            document.getElementById('expense-item').value = ''; 
-            document.getElementById('expense-amount').value = ''; 
-            document.getElementById('input-hkd-preview').innerText = '0'; 
-            
-            window.saveToFirestore('expenses', window.expenses); 
         }
         
-        window.deleteExpense = function(index) { 
-            showCustomConfirm('確定刪除這筆紀錄？', () => { 
-                // 這裡使用 filter 確保即使陣列順序改變，也能正確刪除
-                window.expenses = window.expenses.filter((_, idx) => idx !== index);
-                window.saveToFirestore('expenses', window.expenses); 
+        window.updatePayerSelect = function() { 
+            const payerSelect = document.getElementById('expense-payer');
+            payerSelect.innerHTML = window.companions.map(c => `<option value="${c}">${c}</option>`).join(''); 
+        }
+        window.renderShareButtons = function() { 
+            document.getElementById('share-buttons-container').innerHTML = window.companions.map(c => `<button type="button" class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors" data-name="${c}" onclick="toggleShare(this)">${c}</button>`).join(''); 
+        }
+        window.toggleShare = function(btn) { 
+            if (btn.classList.contains('share-btn-selected')) { 
+                btn.classList.remove('share-btn-selected'); 
+                btn.classList.add('share-btn-unselected'); 
+            } else { 
+                btn.classList.remove('share-btn-unselected'); 
+                btn.classList.add('share-btn-selected'); 
+            } 
+        }
+        window.selectAllShares = function() { 
+            document.querySelectorAll('.share-toggle-btn').forEach(btn => { 
+                btn.classList.remove('share-btn-unselected'); 
+                btn.classList.add('share-btn-selected'); 
             }); 
         }
-        
-        window.promptAddCompanion = function() { const name = prompt("請輸入旅伴名字："); if (name && name.trim() !== "") { if (!window.companions.includes(name.trim())) { window.companions.push(name.trim()); window.saveToFirestore('companions', window.companions); } else { window.showToast("已經在名單內囉！"); } } }
-        window.updatePayerSelect = function() { document.getElementById('expense-payer').innerHTML = window.companions.map(c => `<option value="${c}">${c}</option>`).join(''); }
-        window.renderShareButtons = function() { document.getElementById('share-buttons-container').innerHTML = window.companions.map(c => `<button type="button" class="share-toggle-btn share-btn-selected px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors" data-name="${c}" onclick="toggleShare(this)">${c}</button>`).join(''); }
-        window.toggleShare = function(btn) { if (btn.classList.contains('share-btn-selected')) { btn.classList.remove('share-btn-selected'); btn.classList.add('share-btn-unselected'); } else { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); } }
-        window.selectAllShares = function() { document.querySelectorAll('.share-toggle-btn').forEach(btn => { btn.classList.remove('share-btn-unselected'); btn.classList.add('share-btn-selected'); }); }
-        
+        
         // Modals
         const detailModal = document.getElementById('detail-modal'); const detailContent = document.getElementById('detail-content');
         window.openDetailModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; let icon = item.type==='food'?'utensils':item.type==='transport'?'bus':item.type==='shop'?'shopping-bag':item.type==='stay'?'bed':'map-pin'; let timeStr = item.time; if (item.endTime) timeStr += ` - ${item.endTime}`; 
@@ -1401,50 +1382,75 @@
         // Date & Days
         const dateModal = document.getElementById('date-modal');
         window.openDateModal = function() { 
+            // Only allow editing if not viewing a shared trip (to prevent accidental overwrites)
+            if (window.currentTrip.isShared) {
+                showToast("協作模式下無法更改天數。請先儲存為私人副本。");
+                return;
+            }
             document.getElementById('start-date-input').value = window.currentTrip.meta.startDate || new Date().toISOString().split('T')[0]; 
             document.getElementById('trip-days-input').value = window.scheduleData.length || 3; 
             dateModal.classList.remove('hidden'); 
         }
         window.closeDateModal = function() { dateModal.classList.add('hidden'); }
         window.changeDays = function(delta) { let v = parseInt(document.getElementById('trip-days-input').value) + delta; if(v < 1) v = 1; document.getElementById('trip-days-input').value = v; }
-        
+        
         window.updateTravelDates = function() {
-            const dStr = document.getElementById('start-date-input').value; const days = parseInt(document.getElementById('trip-days-input').value);
+            const dStr = document.getElementById('start-date-input').value; 
+            const days = parseInt(document.getElementById('trip-days-input').value);
+            
+            if(window.currentTrip.isShared) return; // Double check permission
+
             if(!dStr) return window.showToast("請選擇日期");
             const start = new Date(dStr.replace(/-/g, '/'));
             const oldLength = window.scheduleData.length;
-            
-            if(days > oldLength) { for(let i=oldLength; i<days; i++) window.scheduleData.push({ date:"", month:"", day:`Day ${i+1}`, items:[] }); }
-            else if(days < oldLength) { 
-                // 使用自定義確認框取代 confirm()
-                showCustomConfirm(`確定減少天數？`, () => {
-                    window.scheduleData.length = days; 
-                    updateScheduleDataAndMeta(dStr, days, start);
+            
+            // Remove days
+            if(days < oldLength) { 
+                showCustomConfirm(`確定減少天數？這將刪除 Day ${days + 1} 到 Day ${oldLength} 的所有行程。`, () => {
+                      
+                      window.scheduleData.length = days;
+                      updateDayMetadata(start, days, dStr);
                 });
                 return;
             }
-            
-            updateScheduleDataAndMeta(dStr, days, start);
-        }
-        
-        function updateScheduleDataAndMeta(dStr, days, start) {
-            window.scheduleData.forEach((d, i) => { const dt = new Date(start); dt.setDate(start.getDate()+i); d.date=dt.getDate(); d.month=dt.getMonth()+1; d.day=`Day ${i+1}`; });
-            
-            window.saveToFirestore('schedule', window.scheduleData); 
-            
-            // Update metadata locally and remotely (only for the creator's private copy)
-            if(!window.currentTrip.isShared) {
-                const tripIndex = window.tripsList.findIndex(t => t.id === window.currentTrip.id);
-                if (tripIndex !== -1) {
-                    window.tripsList[tripIndex].days = days;
-                    window.tripsList[tripIndex].startDate = dStr;
-                    window.currentTrip.meta = window.tripsList[tripIndex];
-                    window.saveTripsIndex(window.tripsList);
-                    window.saveTripMeta(window.currentTrip.id, window.currentTrip.meta);
+            
+            // Add days
+            if(days > oldLength) { 
+                for(let i=oldLength; i<days; i++) {
+                    window.scheduleData.push({ date:"", month:"", day:`Day ${i+1}`, items:[] }); 
                 }
             }
-            
-            window.renderDaySelector(); window.renderTimeline(window.currentDayIndex); closeDateModal();
+            
+            // Update all day metadata (dates/day names)
+            updateDayMetadata(start, days, dStr);
+
+            function updateDayMetadata(start, days, dStr) {
+                window.scheduleData.forEach((d, i) => { 
+                    const dt = new Date(start); 
+                    dt.setDate(start.getDate()+i); 
+                    d.date=dt.getDate(); 
+                    d.month=dt.getMonth()+1; 
+                    d.day=`Day ${i+1}`; 
+                });
+                
+                window.saveToFirestore('schedule', window.scheduleData); 
+                
+                // Update metadata locally and remotely (only for the creator's private copy)
+                if(!window.currentTrip.isShared) {
+                    const tripIndex = window.tripsList.findIndex(t => t.id === window.currentTrip.id);
+                    if (tripIndex !== -1) {
+                        window.tripsList[tripIndex].days = days;
+                        window.tripsList[tripIndex].startDate = dStr;
+                        window.currentTrip.meta = window.tripsList[tripIndex];
+                        window.saveTripsIndex(window.tripsList);
+                        window.saveTripMeta(window.currentTrip.id, window.currentTrip.meta);
+                    }
+                }
+                
+                window.renderDaySelector(); 
+                window.renderTimeline(0); 
+                closeDateModal();
+            }
         }
 
         window.switchTab = function(tabId) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); ['schedule', 'info', 'budget'].forEach(id => { const btn = document.getElementById(`tab-${id}`); const span = btn.querySelector('span'); if(id === tabId) { btn.className = "active-tab flex items-center gap-2 px-5 py-3 tap-effect transition-all duration-300"; span.classList.remove('hidden'); } else { btn.className = "inactive-tab flex items-center gap-2 px-3 py-3 tap-effect transition-all duration-300"; span.classList.add('hidden'); } }); }
@@ -1497,32 +1503,25 @@
         ];
 
         // Global State
-        // window.scheduleData = []; // 已在頂部初始化
-        // window.expenses = []; // 已在頂部初始化
-        // window.companions = ["我"]; // 已在頂部初始化
-        // ... (rest of the script remains unchanged)
-        
+        window.scheduleData = [];
         window.templateScheduleData = templateScheduleData;
-        
+        
         function initUI() {
             lucide.createIcons();
             generateHourlyWeather();
             document.getElementById('expense-amount').addEventListener('input', function(e) {
                  const val = parseInt(e.target.value) || 0;
-                 // 使用定義好的 EXCHANGE_RATE
-                 document.getElementById('input-hkd-preview').innerText = Math.round(val * EXCHANGE_RATE).toLocaleString();
+                 document.getElementById('input-hkd-preview').innerText = Math.round(val * EXCHANGE_RATE);
             });
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('new-trip-date').value = today;
         }
 
         initUI();
-        
+        
         const style = document.createElement('style');
         style.innerHTML = `@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.4s ease-out; } .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1); }`;
         document.head.appendChild(style);
-        
-        initFirebase(); // 將初始化移到腳本末尾
     </script>
 </body>
 </html>
