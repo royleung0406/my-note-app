@@ -493,6 +493,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import * as firestore from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'; // Import namespace for getDoc check
 
         // 1. Setup Firebase using environment config
         const firebaseConfig = {
@@ -606,16 +607,25 @@
 
 
         // 3. Save Logic (Handles Private and Public Paths)
-        window.saveToFirestore = async (type, data) => {
-            if (!currentUser || !window.currentTripId) {
+        // Refactored to accept optional tripId and isShared status for migration purposes
+        window.saveToFirestore = async (type, data, tripIdOverride = null, isSharedOverride = null) => {
+            const activeTripId = tripIdOverride || window.currentTripId;
+            
+            // Check for current user and an active trip ID
+            if (!currentUser || !activeTripId) { 
                 showToast("尚未連線，無法儲存");
                 return;
             }
             
-            const currentTripMeta = window.tripsList.find(t => t.id === window.currentTripId);
-            const isShared = currentTripMeta?.isShared || false;
+            let isShared = isSharedOverride;
+            
+            if (isShared === null) {
+                // If no override, look up the sharing status from the global list
+                const currentTripMeta = window.tripsList.find(t => t.id === activeTripId);
+                isShared = currentTripMeta?.isShared || false;
+            }
 
-            const docRef = getTripDocRef(window.currentTripId, type, isShared);
+            const docRef = getTripDocRef(activeTripId, type, isShared);
             
             if (!docRef) {
                  showError("無法確定儲存路徑");
@@ -1035,7 +1045,8 @@
             const docRef = getTripDocRef(tripId, 'schedule', true); // Try fetching schedule to see if trip exists publicly
 
             try {
-                const docSnap = await firebase.firestore.getDoc(docRef);
+                // Ensure we use the imported firestore namespace for getDoc
+                const docSnap = await firestore.getDoc(docRef);
 
                 if (!docSnap.exists()) {
                     return window.showToast("找不到此旅程 ID 的資料，可能尚未分享或 ID 輸入錯誤。");
@@ -1094,7 +1105,14 @@
         window.copyTripId = function() {
             const tripId = document.getElementById('current-trip-id-input').value;
              try {
-                navigator.clipboard.writeText(tripId);
+                // Use document.execCommand('copy') for better compatibility in iframe
+                const tempInput = document.createElement('textarea');
+                tempInput.value = tripId;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+
                 window.showToast("Trip ID 已複製！");
             } catch (err) {
                 console.error('Failed to copy text:', err);
@@ -1121,20 +1139,16 @@
             await window.saveTripsIndex(window.tripsList);
 
             // 3. Re-save all trip data under the new path if transitioning to shared.
-            // This copies the private data to the public path, where the new listeners will pick it up.
             if (isShared) {
-                 const prevId = window.currentTripId;
-                 window.currentTripId = null; // Temporarily disable saveToFirestore's currentTripId check
+                 const tripId = currentTripMeta.id;
                  
-                 // Save data directly to public path (using the private data held in window.scheduleData etc.)
-                 await window.saveToFirestore('schedule', window.scheduleData);
-                 await window.saveToFirestore('expenses', window.expenses);
-                 await window.saveToFirestore('companions', window.companions);
-                 
-                 window.currentTripId = prevId; // Restore
+                 // Pass tripId and the NEW shared status (true) to override checks in saveToFirestore
+                 await window.saveToFirestore('schedule', window.scheduleData, tripId, true);
+                 await window.saveToFirestore('expenses', window.expenses, tripId, true);
+                 await window.saveToFirestore('companions', window.companions, tripId, true);
                  
                  // Important: Re-start listeners to point to the new public path
-                 window.startTripListeners(currentTripMeta.id);
+                 window.startTripListeners(tripId);
             }
             
             openShareModal(); // Re-render modal to show new status
