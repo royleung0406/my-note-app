@@ -462,6 +462,9 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
+        // 台灣新台幣 (TWD) 到 港幣 (HKD) 的模擬匯率 (約 1 TWD = 0.25 HKD)
+        const EXCHANGE_RATE = 0.25;
+        
         // 1. Setup Firebase using environment config
         const firebaseConfig = {
             apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw", // 您的 API Key
