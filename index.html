@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊小幫手 v3.3 (RTDB - Fixed)</title>
+    <title>旅遊小幫手 v3.4 (RTDB - Final Fix)</title>
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -525,6 +525,7 @@
             apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw", 
             authDomain: "mytaiwantrip-603c6.firebaseapp.com",
             projectId: "mytaiwantrip-603c6",
+            // IMPORTANT: RTDB URL is often essential and might be missing from injected config.
             databaseURL: "https://mytaiwantrip-603c6-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
         
@@ -533,7 +534,7 @@
         if (typeof __firebase_config !== 'undefined' && __firebase_config) {
              try {
                 const configFromEnv = JSON.parse(__firebase_config);
-                // Merge default RTDB URL if missing, as Canvas usually omits it.
+                // Ensure default RTDB URL is used if the injected config doesn't have it
                 envFirebaseConfig = { ...configFromEnv, ...firebaseConfig }; 
             } catch (e) {
                 console.error("Failed to parse __firebase_config:", e);
@@ -543,7 +544,8 @@
         const app = initializeApp(envFirebaseConfig);
         const auth = getAuth(app);
         // *** RTDB Initialization ***
-        const db = getDatabase(app);
+        // Ensure this initialization uses the correct app instance
+        const db = getDatabase(app); 
         // *** END RTDB Initialization ***
         const provider = new GoogleAuthProvider();
         
@@ -751,7 +753,7 @@
             if (user.isAnonymous) {
                 container.innerHTML = `
                 <button onclick="loginWithGoogle()" class="flex flex-col items-center gap-1 group">
-                    <div class="w-10 h-10 rounded-full bg-white border border-stone-200 shadow-sm flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-300">
+                    <div class="w-10 h-10 rounded-full bg-white border border-stone-200 shadow-sm flex items-center justify-center overflow-hidden">
                         <i data-lucide="user" class="w-5 h-5 text-stone-400 group-hover:text-blue-500"></i>
                     </div>
                     <span class="text-[10px] font-bold text-stone-400 group-hover:text-blue-500">登入備份</span>
