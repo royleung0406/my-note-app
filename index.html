@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊小幫手 v3.2 (RTDB)</title>
+    <title>旅遊小幫手 v3.3 (RTDB - Fixed)</title>
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -521,16 +521,25 @@
 
         // 1. Setup Firebase using environment config
         const firebaseConfig = {
-            apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw", // 您的 API Key
+            // Note: These are example values. In a real environment, they would be injected.
+            apiKey: "AIzaSyDP1jX1u8TCI3TY8U3xfhEZbaMv9JLgJNw", 
             authDomain: "mytaiwantrip-603c6.firebaseapp.com",
             projectId: "mytaiwantrip-603c6",
-            storageBucket: "mytaiwantrip-603c6.firebaseapi.com", // Changed to firebaseapi.com for RTDB
-            messagingSenderId: "1063667328708",
-            appId: "1:1063667328708:web:d2ae7acd304e589b790b91",
-            databaseURL: "https://mytaiwantrip-603c6-default-rtdb.asia-southeast1.firebasedatabase.app" // Added RTDB URL
+            databaseURL: "https://mytaiwantrip-603c6-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
-        // Use global variables if defined by the environment
-        const envFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
+        
+        // Use global variables (__firebase_config) if defined by the environment
+        let envFirebaseConfig = firebaseConfig;
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+             try {
+                const configFromEnv = JSON.parse(__firebase_config);
+                // Merge default RTDB URL if missing, as Canvas usually omits it.
+                envFirebaseConfig = { ...configFromEnv, ...firebaseConfig }; 
+            } catch (e) {
+                console.error("Failed to parse __firebase_config:", e);
+            }
+        }
+        
         const app = initializeApp(envFirebaseConfig);
         const auth = getAuth(app);
         // *** RTDB Initialization ***
@@ -640,7 +649,8 @@
         // *** END RTDB PATHS ***
 
         // 3. Save Logic (Handles Private and Public Paths using RTDB SET)
-        window.saveToFirestore = async (type, data, tripIdOverride = null, isSharedOverride = null) => {
+        // Renamed to saveData for RTDB consistency
+        window.saveData = async (type, data, tripIdOverride = null, isSharedOverride = null) => {
             const activeTripId = tripIdOverride || window.currentTripId;
             
             if (!currentUser || !activeTripId) { 
@@ -693,8 +703,9 @@
         async function initFirebase() {
             try {
                 // Initial Auth Check
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) {
+                    await signInWithCustomToken(auth, token);
                 }
                 
                 onAuthStateChanged(auth, async (user) => {
@@ -852,7 +863,7 @@
         }
 
         window.confirmAddTrip = async function() {
-            // ... (Add Trip Logic - Uses saveToFirestore which now uses RTDB)
+            // ... (Add Trip Logic - Uses saveData which now uses RTDB)
             const title = document.getElementById('new-trip-title').value;
             const startDate = document.getElementById('new-trip-date').value;
             const days = parseInt(document.getElementById('new-trip-days').value);
@@ -903,9 +914,9 @@
             // 4. Save Initial Data (Saves actual data to private user path)
             const prevId = window.currentTripId;
             window.currentTripId = newId;
-            await window.saveToFirestore('schedule', initialSchedule);
-            await window.saveToFirestore('expenses', []);
-            await window.saveToFirestore('companions', ["我"]);
+            await window.saveData('schedule', initialSchedule);
+            await window.saveData('expenses', []);
+            await window.saveData('companions', ["我"]);
             window.currentTripId = prevId; 
             
             // 5. Open it
@@ -988,9 +999,9 @@
             if (isShared && !originalSharedStatus) {
                  try {
                      // 2a: Write data to the NEW public path 
-                     await window.saveToFirestore('schedule', window.scheduleData, tripId, true);
-                     await window.saveToFirestore('expenses', window.expenses, tripId, true);
-                     await window.saveToFirestore('companions', window.companions, tripId, true);
+                     await window.saveData('schedule', window.scheduleData, tripId, true);
+                     await window.saveData('expenses', window.expenses, tripId, true);
+                     await window.saveData('companions', window.companions, tripId, true);
                      
                      // 2b: CLEANUP: Delete old private data after successful copy
                      await window.deleteTripData(tripId, false);
@@ -1058,7 +1069,7 @@
              const confirmed = await showCustomConfirm(`確定要將 ${name} 從旅伴名單中移除嗎？`);
              if (confirmed) {
                  window.companions = window.companions.filter(c => c !== name);
-                 window.saveToFirestore('companions', window.companions);
+                 window.saveData('companions', window.companions);
                  renderCompanionListForModal();
                  window.showToast(`${name} 已移除。`);
              }
@@ -1073,7 +1084,7 @@
                 window.showToast(`${newName} 已經在名單內囉！`);
             } else {
                 window.companions.push(newName);
-                window.saveToFirestore('companions', window.companions);
+                window.saveData('companions', window.companions);
                 window.showToast(`已新增 ${newName}。`);
                 input.value = '';
                 renderCompanionListForModal();
@@ -1163,8 +1174,8 @@
             window.renderFilter(); lucide.createIcons();
         }
 
-        window.addExpense = function() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount || parseInt(amount) <= 0) { window.showToast("請輸入有效項目和金額"); return; } if(sharedBy.length === 0) { window.showToast("請至少選擇一位分攤對象"); return; } window.expenses.push({ item, amount: parseInt(amount), payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; window.saveToFirestore('expenses', window.expenses); }
-        window.deleteExpense = async function(index) { const confirmed = await showCustomConfirm('確定刪除這筆紀錄？'); if(confirmed) { window.expenses.splice(index, 1); window.saveToFirestore('expenses', window.expenses); } }
+        window.addExpense = function() { const item = document.getElementById('expense-item').value; const amount = document.getElementById('expense-amount').value; const payer = document.getElementById('expense-payer').value; const shareBtns = document.querySelectorAll('.share-toggle-btn.share-btn-selected'); const sharedBy = Array.from(shareBtns).map(btn => btn.getAttribute('data-name')); if(!item || !amount || parseInt(amount) <= 0) { window.showToast("請輸入有效項目和金額"); return; } if(sharedBy.length === 0) { window.showToast("請至少選擇一位分攤對象"); return; } window.expenses.push({ item, amount: parseInt(amount), payer, sharedBy }); document.getElementById('expense-item').value = ''; document.getElementById('expense-amount').value = ''; document.getElementById('input-hkd-preview').innerText = '0'; window.saveData('expenses', window.expenses); }
+        window.deleteExpense = async function(index) { const confirmed = await showCustomConfirm('確定刪除這筆紀錄？'); if(confirmed) { window.expenses.splice(index, 1); window.saveData('expenses', window.expenses); } }
         
         window.promptAddCompanion = window.openCompanionModal; 
         
@@ -1202,8 +1213,8 @@
         window.openAddModal = function(dayIndex) { document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = -1; modalTitle.innerText = "新增行程"; document.getElementById('edit-time').value = "12:00"; document.getElementById('edit-end-time').value = ""; document.getElementById('edit-type').value = "sight"; document.getElementById('edit-title').value = ""; document.getElementById('edit-location').value = ""; document.getElementById('edit-tags').value = ""; document.getElementById('edit-note').value = ""; document.getElementById('edit-description').value = ""; editModal.classList.remove('hidden'); }
         window.openEditModal = function(dayIndex, itemIndex) { const item = window.scheduleData[dayIndex].items[itemIndex]; document.getElementById('edit-day-index').value = dayIndex; document.getElementById('edit-item-index').value = itemIndex; modalTitle.innerText = "編輯行程"; document.getElementById('edit-time').value = item.time; document.getElementById('edit-end-time').value = item.endTime || ""; document.getElementById('edit-type').value = item.type; document.getElementById('edit-title').value = item.title; document.getElementById('edit-location').value = item.location; document.getElementById('edit-tags').value = item.tags?item.tags.join(', '):''; document.getElementById('edit-note').value = item.note||''; document.getElementById('edit-description').value = item.description||''; editModal.classList.remove('hidden'); }
         window.closeEditModal = function() { editModal.classList.add('hidden'); }
-        window.saveScheduleItem = function(e) { e.preventDefault(); const d = parseInt(document.getElementById('edit-day-index').value); const i = parseInt(document.getElementById('edit-item-index').value); const item = { time: document.getElementById('edit-time').value, endTime: document.getElementById('edit-end-time').value, type: document.getElementById('edit-type').value, title: document.getElementById('edit-title').value, location: document.getElementById('edit-location').value, tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(t=>t), note: document.getElementById('edit-note').value, description: document.getElementById('edit-description').value }; if (i === -1) window.scheduleData[d].items.push(item); else window.scheduleData[d].items[i] = item; window.saveToFirestore('schedule', window.scheduleData); window.renderTimeline(d); closeEditModal(); }
-        window.deleteScheduleItem = async function(d, i) { const confirmed = await showCustomConfirm("確定刪除此行程項目？"); if(confirmed) { window.scheduleData[d].items.splice(i, 1); window.saveToFirestore('schedule', window.scheduleData); window.renderTimeline(d); } }
+        window.saveScheduleItem = function(e) { e.preventDefault(); const d = parseInt(document.getElementById('edit-day-index').value); const i = parseInt(document.getElementById('edit-item-index').value); const item = { time: document.getElementById('edit-time').value, endTime: document.getElementById('edit-end-time').value, type: document.getElementById('edit-type').value, title: document.getElementById('edit-title').value, location: document.getElementById('edit-location').value, tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(t=>t), note: document.getElementById('edit-note').value, description: document.getElementById('edit-description').value }; if (i === -1) window.scheduleData[d].items.push(item); else window.scheduleData[d].items[i] = item; window.saveData('schedule', window.scheduleData); window.renderTimeline(d); closeEditModal(); }
+        window.deleteScheduleItem = async function(d, i) { const confirmed = await showCustomConfirm("確定刪除此行程項目？"); if(confirmed) { window.scheduleData[d].items.splice(i, 1); window.saveData('schedule', window.scheduleData); window.renderTimeline(d); } }
         editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
 
         const dateModal = document.getElementById('date-modal');
@@ -1259,7 +1270,7 @@
                 d.day=`Day ${i+1}`; 
             });
             
-            window.saveToFirestore('schedule', window.scheduleData); 
+            window.saveData('schedule', window.scheduleData); 
             window.renderDaySelector(); 
             window.renderTimeline(0); 
             closeDateModal();
