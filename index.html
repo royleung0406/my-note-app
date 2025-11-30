@@ -879,7 +879,7 @@
             window.tripsList.push(newTripMeta);
             window.renderTripListUI();
             closeAddTripModal();
-            const prevContext = { ...window.currentTrip };
+            const prevContext = window.currentTrip;
             window.currentTrip = { id: newId, isShared: false, meta: newTripMeta };
             await window.saveTripMeta(newId, newTripMeta);
             await window.saveToFirestore('schedule', initialSchedule);
@@ -1252,7 +1252,6 @@
         // Template schedule (kept from original)
         // -----------------------
         const templateScheduleData = [
-           const templateScheduleData = [
             // Day 1 (27)
             {
                 date: "27",
